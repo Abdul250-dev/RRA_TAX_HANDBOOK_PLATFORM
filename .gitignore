@@ -1,0 +1,7 @@
+/apps/backend/target/
+/apps/public-frontend/.next/
+/apps/admin-frontend/.next/
+/node_modules/
+/.idea/
+/.vscode/
+.env

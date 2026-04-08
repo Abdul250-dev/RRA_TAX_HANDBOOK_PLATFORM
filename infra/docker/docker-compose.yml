@@ -1,0 +1,10 @@
+services:
+  backend:
+    build:
+      context: ../../apps/backend
+  public-frontend:
+    build:
+      context: ../../apps/public-frontend
+  admin-frontend:
+    build:
+      context: ../../apps/admin-frontend
