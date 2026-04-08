@@ -1,6 +1,9 @@
 /apps/backend/target/
+/apps/backend/Docs/
 /apps/public-frontend/.next/
+/apps/public-frontend/Docs/
 /apps/admin-frontend/.next/
+/apps/admin-frontend/Docs/
 /node_modules/
 /.idea/
 /.vscode/
