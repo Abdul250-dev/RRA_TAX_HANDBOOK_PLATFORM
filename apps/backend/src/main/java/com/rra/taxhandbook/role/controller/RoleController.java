@@ -2,6 +2,7 @@ package com.rra.taxhandbook.role.controller;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,6 +21,7 @@ public class RoleController {
 	}
 
 	@GetMapping
+	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
 	public List<Role> getRoles() {
 		return roleService.getRoles();
 	}

@@ -2,6 +2,7 @@ package com.rra.taxhandbook.user.controller;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,16 +26,19 @@ public class UserController {
 	}
 
 	@GetMapping
+	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
 	public List<UserResponse> getUsers() {
 		return userService.getUsers();
 	}
 
 	@GetMapping("/{id}")
+	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
 	public UserResponse getUser(@PathVariable Long id) {
 		return userService.getUserById(id);
 	}
 
 	@PostMapping
+	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
 	public ApiResponse<UserResponse> createUser(@RequestBody UserRequest request) {
 		return userService.createUser(request);
 	}

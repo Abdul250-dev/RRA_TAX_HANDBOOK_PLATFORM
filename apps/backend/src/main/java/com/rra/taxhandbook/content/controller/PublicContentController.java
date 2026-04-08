@@ -1,0 +1,35 @@
+package com.rra.taxhandbook.content.controller;
+
+import java.util.List;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.rra.taxhandbook.common.enums.LanguageCode;
+import com.rra.taxhandbook.content.dto.SectionSummaryResponse;
+import com.rra.taxhandbook.content.dto.TopicDetailResponse;
+import com.rra.taxhandbook.content.service.ContentStructureService;
+
+@RestController
+@RequestMapping("/api/public")
+public class PublicContentController {
+
+	private final ContentStructureService contentStructureService;
+
+	public PublicContentController(ContentStructureService contentStructureService) {
+		this.contentStructureService = contentStructureService;
+	}
+
+	@GetMapping("/sections")
+	public List<SectionSummaryResponse> getSections(@RequestParam(defaultValue = "EN") LanguageCode locale) {
+		return contentStructureService.getSections(locale);
+	}
+
+	@GetMapping("/topics/{slug}")
+	public TopicDetailResponse getTopic(@PathVariable String slug, @RequestParam(defaultValue = "EN") LanguageCode locale) {
+		return contentStructureService.getTopicBySlug(slug, locale);
+	}
+}

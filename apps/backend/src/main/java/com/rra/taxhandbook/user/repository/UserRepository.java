@@ -1,13 +1,14 @@
 package com.rra.taxhandbook.user.repository;
 
-import java.util.List;
 import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.rra.taxhandbook.user.entity.User;
 
-public interface UserRepository {
+public interface UserRepository extends JpaRepository<User, Long> {
 
-	List<User> findAll();
+	Optional<User> findByEmployeeId(String employeeId);
 
-	Optional<User> findById(Long id);
+	Optional<User> findByEmail(String email);
 }

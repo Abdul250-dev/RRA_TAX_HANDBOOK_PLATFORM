@@ -1,15 +1,27 @@
+server:
+  port: 8081
+
 spring:
   application:
     name: taxhandbook
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/rra_tax_hand_book}
     username: ${DATABASE_USERNAME:postgres}
-    password: ${DATABASE_PASSWORD:postgres}
+    password: ${DATABASE_PASSWORD:Admin@123}
     driver-class-name: org.postgresql.Driver
   sql:
     init:
-      mode: never
+      mode: always
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    defer-datasource-initialization: true
   security:
     user:
       name: admin
       password: Admin@123
+security:
+  jwt:
+    secret: rra-tax-handbook-local-jwt-secret-change-in-production
+    expiration-seconds: 3600
