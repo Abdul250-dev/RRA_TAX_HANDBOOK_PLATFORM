@@ -35,6 +35,9 @@ public class User {
 	@Column(nullable = false, unique = true)
 	private String email;
 
+	@Column(name = "password_hash")
+	private String passwordHash;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "preferred_locale", nullable = false)
 	private LanguageCode preferredLocale;
@@ -46,23 +49,54 @@ public class User {
 	@Column(nullable = false)
 	private String status;
 
+	@Column(name = "invite_token", unique = true)
+	private String inviteToken;
+
+	@Column(name = "invite_expires_at")
+	private Instant inviteExpiresAt;
+
+	@Column(name = "password_reset_token", unique = true)
+	private String passwordResetToken;
+
+	@Column(name = "password_reset_expires_at")
+	private Instant passwordResetExpiresAt;
+
 	@Column(name = "created_at", nullable = false)
 	private Instant createdAt;
 
-	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@ManyToOne(fetch = FetchType.EAGER, optional = false)
 	@JoinColumn(name = "role_id", nullable = false)
 	private Role role;
 
 	protected User() {
 	}
 
-	public User(String userCode, String fullName, String email, LanguageCode preferredLocale, UserSource source, String status, Instant createdAt, Role role) {
+	public User(
+		String userCode,
+		String fullName,
+		String email,
+		String passwordHash,
+		LanguageCode preferredLocale,
+		UserSource source,
+		String status,
+		String inviteToken,
+		Instant inviteExpiresAt,
+		String passwordResetToken,
+		Instant passwordResetExpiresAt,
+		Instant createdAt,
+		Role role
+	) {
 		this.userCode = userCode;
 		this.fullName = fullName;
 		this.email = email;
+		this.passwordHash = passwordHash;
 		this.preferredLocale = preferredLocale;
 		this.source = source;
 		this.status = status;
+		this.inviteToken = inviteToken;
+		this.inviteExpiresAt = inviteExpiresAt;
+		this.passwordResetToken = passwordResetToken;
+		this.passwordResetExpiresAt = passwordResetExpiresAt;
 		this.createdAt = createdAt;
 		this.role = role;
 	}
@@ -83,6 +117,10 @@ public class User {
 		return email;
 	}
 
+	public String getPasswordHash() {
+		return passwordHash;
+	}
+
 	public LanguageCode getPreferredLocale() {
 		return preferredLocale;
 	}
@@ -95,11 +133,66 @@ public class User {
 		return status;
 	}
 
+	public String getInviteToken() {
+		return inviteToken;
+	}
+
+	public Instant getInviteExpiresAt() {
+		return inviteExpiresAt;
+	}
+
+	public String getPasswordResetToken() {
+		return passwordResetToken;
+	}
+
+	public Instant getPasswordResetExpiresAt() {
+		return passwordResetExpiresAt;
+	}
+
 	public Instant getCreatedAt() {
 		return createdAt;
 	}
 
 	public Role getRole() {
 		return role;
+	}
+
+	public void activateWithPassword(String passwordHash) {
+		this.passwordHash = passwordHash;
+		this.status = "ACTIVE";
+		this.inviteToken = null;
+		this.inviteExpiresAt = null;
+	}
+
+	public void issuePasswordReset(String token, Instant expiresAt) {
+		this.passwordResetToken = token;
+		this.passwordResetExpiresAt = expiresAt;
+	}
+
+	public void resetPassword(String passwordHash) {
+		this.passwordHash = passwordHash;
+		this.passwordResetToken = null;
+		this.passwordResetExpiresAt = null;
+	}
+
+	public void removeAccess() {
+		this.status = "REMOVED";
+		this.passwordHash = null;
+		this.inviteToken = null;
+		this.inviteExpiresAt = null;
+		this.passwordResetToken = null;
+		this.passwordResetExpiresAt = null;
+	}
+
+	public void reissueInvite(String inviteToken, Instant inviteExpiresAt) {
+		this.status = "INVITED";
+		this.inviteToken = inviteToken;
+		this.inviteExpiresAt = inviteExpiresAt;
+	}
+
+	public void cancelInvite() {
+		this.status = "REMOVED";
+		this.inviteToken = null;
+		this.inviteExpiresAt = null;
 	}
 }

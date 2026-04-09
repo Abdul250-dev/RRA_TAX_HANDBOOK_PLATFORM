@@ -22,6 +22,7 @@ public class SecurityConfig {
 				.requestMatchers("/", "/error").permitAll()
 				.requestMatchers("/api/auth/**").permitAll()
 				.requestMatchers("/api/health").permitAll()
+				.requestMatchers("/api/users/accept-invite").permitAll()
 				.requestMatchers("/api/articles/**", "/api/categories/**", "/api/faqs/**", "/api/documents/**", "/api/public/**").permitAll()
 				.anyRequest().authenticated()
 			)
