@@ -157,6 +157,16 @@ public class User {
 		return role;
 	}
 
+	public void assignRole(Role role) {
+		this.role = role;
+	}
+
+	public void updateProfile(String fullName, String email, LanguageCode preferredLocale) {
+		this.fullName = fullName;
+		this.email = email;
+		this.preferredLocale = preferredLocale;
+	}
+
 	public void activateWithPassword(String passwordHash) {
 		this.passwordHash = passwordHash;
 		this.status = "ACTIVE";

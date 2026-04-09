@@ -20,6 +20,8 @@ import com.rra.taxhandbook.user.dto.AcceptInviteRequest;
 import com.rra.taxhandbook.user.dto.AdminSetPasswordUserRequest;
 import com.rra.taxhandbook.user.dto.InviteUserRequest;
 import com.rra.taxhandbook.user.dto.PendingInviteResponse;
+import com.rra.taxhandbook.user.dto.UpdateUserProfileRequest;
+import com.rra.taxhandbook.user.dto.UpdateUserRoleRequest;
 import com.rra.taxhandbook.user.dto.UserRequest;
 import com.rra.taxhandbook.user.dto.UserInviteResponse;
 import com.rra.taxhandbook.user.dto.UserResponse;
@@ -66,6 +68,44 @@ public class UserService {
 		return userRepository.findById(id)
 			.map(this::toResponse)
 			.orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
+	}
+
+	public ApiResponse<UserResponse> updateUserProfile(Long id, UpdateUserProfileRequest request, String actor) {
+		if (request.fullName() == null || request.fullName().isBlank()) {
+			throw new IllegalArgumentException("Full name is required.");
+		}
+		if (request.email() == null || request.email().isBlank()) {
+			throw new IllegalArgumentException("Email is required.");
+		}
+		User user = userRepository.findById(id)
+			.orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
+		String normalizedEmail = request.email().trim().toLowerCase();
+		userRepository.findByEmail(normalizedEmail).ifPresent(existing -> {
+			if (!existing.getId().equals(id)) {
+				throw new IllegalArgumentException("A system user already exists for email " + normalizedEmail);
+			}
+		});
+		LanguageCode locale = request.preferredLocale() == null ? LanguageCode.EN : request.preferredLocale();
+		user.updateProfile(request.fullName().trim(), normalizedEmail, locale);
+		User savedUser = userRepository.save(user);
+		auditLogService.log("USER_PROFILE_UPDATED", actor, savedUser.getEmail(), "User profile details updated");
+		return new ApiResponse<>("User profile updated successfully", toResponse(savedUser));
+	}
+
+	public ApiResponse<UserResponse> updateUserRole(Long id, UpdateUserRoleRequest request, String actor) {
+		if (request.roleName() == null || request.roleName().isBlank()) {
+			throw new IllegalArgumentException("Role name is required.");
+		}
+		User user = userRepository.findById(id)
+			.orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
+		Role role = roleService.getRoleByName(request.roleName());
+		if (UserRole.PUBLIC.name().equalsIgnoreCase(role.getName())) {
+			throw new IllegalArgumentException("PUBLIC cannot be assigned to a local authenticated system user.");
+		}
+		user.assignRole(role);
+		User savedUser = userRepository.save(user);
+		auditLogService.log("USER_ROLE_UPDATED", actor, savedUser.getEmail(), "Role updated to " + role.getName());
+		return new ApiResponse<>("User role updated successfully", toResponse(savedUser));
 	}
 
 	public ApiResponse<UserResponse> createUser(UserRequest request) {

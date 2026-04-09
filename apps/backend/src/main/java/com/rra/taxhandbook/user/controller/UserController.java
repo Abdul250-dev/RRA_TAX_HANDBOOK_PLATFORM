@@ -17,6 +17,8 @@ import com.rra.taxhandbook.user.dto.AcceptInviteRequest;
 import com.rra.taxhandbook.user.dto.AdminSetPasswordUserRequest;
 import com.rra.taxhandbook.user.dto.InviteUserRequest;
 import com.rra.taxhandbook.user.dto.PendingInviteResponse;
+import com.rra.taxhandbook.user.dto.UpdateUserProfileRequest;
+import com.rra.taxhandbook.user.dto.UpdateUserRoleRequest;
 import com.rra.taxhandbook.user.dto.UserRequest;
 import com.rra.taxhandbook.user.dto.UserInviteResponse;
 import com.rra.taxhandbook.user.dto.UserResponse;
@@ -83,6 +85,26 @@ public class UserController {
 	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
 	public ApiResponse<UserResponse> createUserWithPassword(@RequestBody AdminSetPasswordUserRequest request) {
 		return userService.createUserWithPassword(request);
+	}
+
+	@PostMapping("/{id}/role")
+	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+	public ApiResponse<UserResponse> updateUserRole(
+		@PathVariable Long id,
+		@RequestBody UpdateUserRoleRequest request,
+		Authentication authentication
+	) {
+		return userService.updateUserRole(id, request, authentication.getName());
+	}
+
+	@PostMapping("/{id}/profile")
+	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+	public ApiResponse<UserResponse> updateUserProfile(
+		@PathVariable Long id,
+		@RequestBody UpdateUserProfileRequest request,
+		Authentication authentication
+	) {
+		return userService.updateUserProfile(id, request, authentication.getName());
 	}
 
 	@DeleteMapping("/{id}")
