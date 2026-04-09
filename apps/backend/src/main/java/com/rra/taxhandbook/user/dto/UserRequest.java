@@ -1,9 +1,11 @@
 package com.rra.taxhandbook.user.dto;
 
+import com.rra.taxhandbook.common.enums.LanguageCode;
+
 public record UserRequest(
-	String employeeId,
 	String fullName,
 	String email,
-	String roleName
+	String roleName,
+	LanguageCode preferredLocale
 ) {
 }

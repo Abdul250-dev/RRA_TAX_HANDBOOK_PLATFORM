@@ -2,10 +2,13 @@ package com.rra.taxhandbook.user.entity;
 
 import java.time.Instant;
 
+import com.rra.taxhandbook.common.enums.LanguageCode;
 import com.rra.taxhandbook.role.entity.Role;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -22,14 +25,23 @@ public class User {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	// Keep the legacy column for compatibility while treating it as a local user code.
 	@Column(name = "employee_id", nullable = false, unique = true)
-	private String employeeId;
+	private String userCode;
 
 	@Column(name = "full_name", nullable = false)
 	private String fullName;
 
 	@Column(nullable = false, unique = true)
 	private String email;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "preferred_locale", nullable = false)
+	private LanguageCode preferredLocale;
+
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private UserSource source;
 
 	@Column(nullable = false)
 	private String status;
@@ -44,10 +56,12 @@ public class User {
 	protected User() {
 	}
 
-	public User(String employeeId, String fullName, String email, String status, Instant createdAt, Role role) {
-		this.employeeId = employeeId;
+	public User(String userCode, String fullName, String email, LanguageCode preferredLocale, UserSource source, String status, Instant createdAt, Role role) {
+		this.userCode = userCode;
 		this.fullName = fullName;
 		this.email = email;
+		this.preferredLocale = preferredLocale;
+		this.source = source;
 		this.status = status;
 		this.createdAt = createdAt;
 		this.role = role;
@@ -57,8 +71,8 @@ public class User {
 		return id;
 	}
 
-	public String getEmployeeId() {
-		return employeeId;
+	public String getUserCode() {
+		return userCode;
 	}
 
 	public String getFullName() {
@@ -67,6 +81,14 @@ public class User {
 
 	public String getEmail() {
 		return email;
+	}
+
+	public LanguageCode getPreferredLocale() {
+		return preferredLocale;
+	}
+
+	public UserSource getSource() {
+		return source;
 	}
 
 	public String getStatus() {

@@ -7,8 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.rra.taxhandbook.user.entity.User;
 
 public interface UserRepository extends JpaRepository<User, Long> {
-
-	Optional<User> findByEmployeeId(String employeeId);
-
+	Optional<User> findByUserCode(String userCode);
 	Optional<User> findByEmail(String email);
 }

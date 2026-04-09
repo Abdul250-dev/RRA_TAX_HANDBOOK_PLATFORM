@@ -244,7 +244,7 @@
           }
         },
         {
-          "name": "Create Verified System User",
+          "name": "Create Local System User",
           "request": {
             "method": "POST",
             "header": [
@@ -255,7 +255,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"employeeId\": \"RRA-001\",\n  \"fullName\": \"System Administrator\",\n  \"email\": \"admin@rra.gov.rw\",\n  \"roleName\": \"ADMIN\"\n}"
+              "raw": "{\n  \"fullName\": \"System Administrator\",\n  \"email\": \"admin@rra.gov.rw\",\n  \"roleName\": \"ADMIN\",\n  \"preferredLocale\": \"EN\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/users",

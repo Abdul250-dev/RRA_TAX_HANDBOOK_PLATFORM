@@ -6,14 +6,15 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.rra.taxhandbook.common.dto.ApiResponse;
+import com.rra.taxhandbook.common.enums.LanguageCode;
+import com.rra.taxhandbook.common.enums.UserRole;
 import com.rra.taxhandbook.common.exception.ResourceNotFoundException;
-import com.rra.taxhandbook.employee.entity.EmployeeDirectorySnapshot;
-import com.rra.taxhandbook.employee.service.EmployeeVerificationService;
 import com.rra.taxhandbook.role.entity.Role;
 import com.rra.taxhandbook.role.service.RoleService;
 import com.rra.taxhandbook.user.dto.UserRequest;
 import com.rra.taxhandbook.user.dto.UserResponse;
 import com.rra.taxhandbook.user.entity.User;
+import com.rra.taxhandbook.user.entity.UserSource;
 import com.rra.taxhandbook.user.repository.UserRepository;
 
 @Service
@@ -21,16 +22,10 @@ public class UserService {
 
 	private final UserRepository userRepository;
 	private final RoleService roleService;
-	private final EmployeeVerificationService employeeVerificationService;
 
-	public UserService(
-		UserRepository userRepository,
-		RoleService roleService,
-		EmployeeVerificationService employeeVerificationService
-	) {
+	public UserService(UserRepository userRepository, RoleService roleService) {
 		this.userRepository = userRepository;
 		this.roleService = roleService;
-		this.employeeVerificationService = employeeVerificationService;
 	}
 
 	public List<UserResponse> getUsers() {
@@ -46,37 +41,59 @@ public class UserService {
 	}
 
 	public ApiResponse<UserResponse> createUser(UserRequest request) {
-		EmployeeDirectorySnapshot employee = employeeVerificationService.verifyActiveEmployee(request.employeeId(), request.email());
+		if (request.fullName() == null || request.fullName().isBlank()) {
+			throw new IllegalArgumentException("Full name is required.");
+		}
+		if (request.email() == null || request.email().isBlank()) {
+			throw new IllegalArgumentException("Email is required.");
+		}
+		LanguageCode preferredLocale = request.preferredLocale() == null ? LanguageCode.EN : request.preferredLocale();
 		Role role = roleService.getRoleByName(request.roleName());
+		if (UserRole.PUBLIC.name().equalsIgnoreCase(role.getName())) {
+			throw new IllegalArgumentException("PUBLIC cannot be assigned to a local authenticated system user.");
+		}
 
-		userRepository.findByEmployeeId(request.employeeId()).ifPresent(existing -> {
-			throw new IllegalArgumentException("A system user already exists for employee " + request.employeeId());
-		});
-
+		String userCode = generateUserCode(request.fullName());
 		userRepository.findByEmail(request.email()).ifPresent(existing -> {
 			throw new IllegalArgumentException("A system user already exists for email " + request.email());
 		});
+		userRepository.findByUserCode(userCode).ifPresent(existing -> {
+			throw new IllegalArgumentException("A system user already exists for generated code " + userCode);
+		});
 
 		User user = new User(
-			employee.getEmployeeId(),
-			employee.getFullName(),
-			employee.getEmail(),
+			userCode,
+			request.fullName().trim(),
+			request.email().trim().toLowerCase(),
+			preferredLocale,
+			UserSource.LOCAL,
 			"ACTIVE",
 			Instant.now(),
 			role
 		);
 
 		User savedUser = userRepository.save(user);
-		return new ApiResponse<>("User created from verified RRA employee directory entry", toResponse(savedUser));
+		return new ApiResponse<>("Local system user created successfully", toResponse(savedUser));
 	}
 
 	private UserResponse toResponse(User user) {
 		return new UserResponse(
 			user.getId(),
-			user.getEmployeeId(),
+			user.getUserCode(),
 			user.getFullName(),
 			user.getEmail(),
-			user.getRole().getName()
+			user.getRole().getName(),
+			user.getPreferredLocale().name(),
+			user.getSource().name(),
+			user.getStatus()
 		);
+	}
+
+	private String generateUserCode(String fullName) {
+		String normalized = fullName == null ? "user" : fullName.trim().replaceAll("[^A-Za-z0-9]+", "-").replaceAll("(^-|-$)", "");
+		if (normalized.isBlank()) {
+			normalized = "user";
+		}
+		return "LOCAL-" + normalized.toUpperCase() + "-" + Instant.now().toEpochMilli();
 	}
 }
