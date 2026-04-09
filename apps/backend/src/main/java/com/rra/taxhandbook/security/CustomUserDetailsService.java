@@ -11,6 +11,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.rra.taxhandbook.user.repository.UserRepository;
+
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
@@ -21,13 +23,30 @@ public class CustomUserDetailsService implements UserDetailsService {
 	private String defaultPassword;
 
 	private final PasswordEncoder passwordEncoder;
+	private final UserRepository userRepository;
 
-	public CustomUserDetailsService(PasswordEncoder passwordEncoder) {
+	public CustomUserDetailsService(PasswordEncoder passwordEncoder, UserRepository userRepository) {
 		this.passwordEncoder = passwordEncoder;
+		this.userRepository = userRepository;
 	}
 
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+		String normalizedUsername = username == null ? "" : username.trim().toLowerCase();
+		var localUser = userRepository.findByEmail(normalizedUsername)
+			.or(() -> userRepository.findByUserCode(username == null ? "" : username.trim()));
+		if (localUser.isPresent()) {
+			var user = localUser.get();
+			if (!"ACTIVE".equalsIgnoreCase(user.getStatus()) || user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
+				throw new UsernameNotFoundException("User is not active for login: " + username);
+			}
+			return new User(
+				user.getEmail(),
+				user.getPasswordHash(),
+				List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().getName()))
+			);
+		}
+
 		if (!defaultUsername.equals(username)) {
 			throw new UsernameNotFoundException("User not found: " + username);
 		}

@@ -33,3 +33,12 @@ pnpm-debug.log*
 
 # TypeScript
 *.tsbuildinfo
+/apps/public-frontend/.next/
+/apps/admin-frontend/.next/
+/node_modules/
+**/node_modules/
+/.idea/
+/.vscode/
+.env
+docs/
+**/docs/
