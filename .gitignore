@@ -1,4 +1,38 @@
+# Backend
 /apps/backend/target/
+
+# Frontend build outputs
+/apps/public-frontend/.next/
+/apps/public-frontend/out/
+/apps/admin-frontend/.next/
+/apps/admin-frontend/out/
+
+# Dependencies (covers root and all nested node_modules)
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# IDEs
+/.idea/
+/.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
 /apps/public-frontend/.next/
 /apps/admin-frontend/.next/
 /node_modules/
