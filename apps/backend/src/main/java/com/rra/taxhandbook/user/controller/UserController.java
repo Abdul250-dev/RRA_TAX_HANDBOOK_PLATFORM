@@ -8,11 +8,13 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.rra.taxhandbook.common.dto.ApiResponse;
+import com.rra.taxhandbook.audit.dto.UserActivityResponse;
 import com.rra.taxhandbook.user.dto.AcceptInviteRequest;
 import com.rra.taxhandbook.user.dto.AdminSetPasswordUserRequest;
 import com.rra.taxhandbook.user.dto.InviteUserRequest;
@@ -22,6 +24,7 @@ import com.rra.taxhandbook.user.dto.UpdateUserRoleRequest;
 import com.rra.taxhandbook.user.dto.UserRequest;
 import com.rra.taxhandbook.user.dto.UserInviteResponse;
 import com.rra.taxhandbook.user.dto.UserResponse;
+import com.rra.taxhandbook.user.dto.UserSummaryResponse;
 import com.rra.taxhandbook.user.service.UserService;
 
 @RestController
@@ -36,8 +39,11 @@ public class UserController {
 
 	@GetMapping
 	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
-	public List<UserResponse> getUsers() {
-		return userService.getUsers();
+	public List<UserResponse> getUsers(
+		@RequestParam(required = false) String status,
+		@RequestParam(required = false) String search
+	) {
+		return userService.getUsers(status, search);
 	}
 
 	@GetMapping("/invited")
@@ -46,10 +52,22 @@ public class UserController {
 		return userService.getPendingInvites();
 	}
 
+	@GetMapping("/summary")
+	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+	public UserSummaryResponse getUserSummary() {
+		return userService.getUserSummary();
+	}
+
 	@GetMapping("/{id}")
 	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
 	public UserResponse getUser(@PathVariable Long id) {
 		return userService.getUserById(id);
+	}
+
+	@GetMapping("/{id}/activity")
+	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','AUDITOR')")
+	public List<UserActivityResponse> getUserActivity(@PathVariable Long id) {
+		return userService.getUserActivity(id);
 	}
 
 	@PostMapping
@@ -111,6 +129,18 @@ public class UserController {
 	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
 	public ApiResponse<String> removeUser(@PathVariable Long id, Authentication authentication) {
 		return userService.removeUser(id, authentication.getName());
+	}
+
+	@PostMapping("/{id}/suspend")
+	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+	public ApiResponse<UserResponse> suspendUser(@PathVariable Long id, Authentication authentication) {
+		return userService.suspendUser(id, authentication.getName());
+	}
+
+	@PostMapping("/{id}/reactivate")
+	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+	public ApiResponse<UserResponse> reactivateUser(@PathVariable Long id, Authentication authentication) {
+		return userService.reactivateUser(id, authentication.getName());
 	}
 
 	@PostMapping("/{id}/restore")

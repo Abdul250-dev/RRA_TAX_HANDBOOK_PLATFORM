@@ -59,4 +59,11 @@ public class TopicTranslation {
 	public String getSlug() { return slug; }
 	public String getSummary() { return summary; }
 	public String getIntroText() { return introText; }
+
+	public void update(String title, String slug, String summary, String introText) {
+		this.title = title;
+		this.slug = slug;
+		this.summary = summary;
+		this.introText = introText;
+	}
 }

@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.rra.taxhandbook.audit.dto.UserActivityResponse;
 import com.rra.taxhandbook.audit.service.AuditLogService;
 import com.rra.taxhandbook.auth.dto.InvitePreviewResponse;
 import com.rra.taxhandbook.common.dto.ApiResponse;
@@ -25,6 +26,7 @@ import com.rra.taxhandbook.user.dto.UpdateUserRoleRequest;
 import com.rra.taxhandbook.user.dto.UserRequest;
 import com.rra.taxhandbook.user.dto.UserInviteResponse;
 import com.rra.taxhandbook.user.dto.UserResponse;
+import com.rra.taxhandbook.user.dto.UserSummaryResponse;
 import com.rra.taxhandbook.user.entity.User;
 import com.rra.taxhandbook.user.entity.UserSource;
 import com.rra.taxhandbook.user.repository.UserRepository;
@@ -53,7 +55,13 @@ public class UserService {
 	}
 
 	public List<UserResponse> getUsers() {
-		return userRepository.findAll().stream()
+		return getUsers(null, null);
+	}
+
+	public List<UserResponse> getUsers(String status, String search) {
+		String normalizedStatus = normalizeFilter(status);
+		String normalizedSearch = normalizeFilter(search);
+		return userRepository.findForAdminList(normalizedStatus, normalizedSearch).stream()
 			.map(this::toResponse)
 			.toList();
 	}
@@ -64,10 +72,26 @@ public class UserService {
 			.toList();
 	}
 
+	public UserSummaryResponse getUserSummary() {
+		return new UserSummaryResponse(
+			userRepository.count(),
+			userRepository.countByStatusIgnoreCase("ACTIVE"),
+			userRepository.countByStatusIgnoreCase("INVITED"),
+			userRepository.countByStatusIgnoreCase("SUSPENDED"),
+			userRepository.countByStatusIgnoreCase("REMOVED")
+		);
+	}
+
 	public UserResponse getUserById(Long id) {
 		return userRepository.findById(id)
 			.map(this::toResponse)
 			.orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
+	}
+
+	public List<UserActivityResponse> getUserActivity(Long id) {
+		User user = userRepository.findById(id)
+			.orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
+		return auditLogService.getRecentUserActivity(user.getEmail());
 	}
 
 	public ApiResponse<UserResponse> updateUserProfile(Long id, UpdateUserProfileRequest request, String actor) {
@@ -212,6 +236,33 @@ public class UserService {
 		));
 	}
 
+	public ApiResponse<UserResponse> suspendUser(Long id, String actor) {
+		User user = userRepository.findById(id)
+			.orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
+		if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
+			throw new IllegalArgumentException("Only active users can be suspended.");
+		}
+		user.suspendAccess();
+		User savedUser = userRepository.save(user);
+		auditLogService.log("USER_SUSPENDED", actor, savedUser.getEmail(), "User access temporarily suspended");
+		return new ApiResponse<>("User suspended successfully", toResponse(savedUser));
+	}
+
+	public ApiResponse<UserResponse> reactivateUser(Long id, String actor) {
+		User user = userRepository.findById(id)
+			.orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
+		if (!"SUSPENDED".equalsIgnoreCase(user.getStatus())) {
+			throw new IllegalArgumentException("Only suspended users can be reactivated.");
+		}
+		if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
+			throw new IllegalArgumentException("Suspended user cannot be reactivated without a password.");
+		}
+		user.reactivateAccess();
+		User savedUser = userRepository.save(user);
+		auditLogService.log("USER_REACTIVATED", actor, savedUser.getEmail(), "Suspended user reactivated");
+		return new ApiResponse<>("User reactivated successfully", toResponse(savedUser));
+	}
+
 	public InvitePreviewResponse previewInviteToken(String token) {
 		if (token == null || token.isBlank()) {
 			return new InvitePreviewResponse(false, false, null, null, null, null, null, "Invite token is required.");
@@ -325,5 +376,13 @@ public class UserService {
 			normalized = "user";
 		}
 		return "LOCAL-" + normalized.toUpperCase() + "-" + Instant.now().toEpochMilli();
+	}
+
+	private String normalizeFilter(String value) {
+		if (value == null) {
+			return null;
+		}
+		String trimmed = value.trim();
+		return trimmed.isEmpty() ? null : trimmed;
 	}
 }

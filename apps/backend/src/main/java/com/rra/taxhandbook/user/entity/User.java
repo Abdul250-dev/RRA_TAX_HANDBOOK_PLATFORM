@@ -194,6 +194,22 @@ public class User {
 		this.passwordResetExpiresAt = null;
 	}
 
+	public void suspendAccess() {
+		this.status = "SUSPENDED";
+		this.inviteToken = null;
+		this.inviteExpiresAt = null;
+		this.passwordResetToken = null;
+		this.passwordResetExpiresAt = null;
+	}
+
+	public void reactivateAccess() {
+		this.status = "ACTIVE";
+		this.inviteToken = null;
+		this.inviteExpiresAt = null;
+		this.passwordResetToken = null;
+		this.passwordResetExpiresAt = null;
+	}
+
 	public void reissueInvite(String inviteToken, Instant inviteExpiresAt) {
 		this.status = "INVITED";
 		this.inviteToken = inviteToken;

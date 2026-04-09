@@ -12,4 +12,7 @@ public interface SectionTranslationRepository extends JpaRepository<SectionTrans
 	List<SectionTranslation> findByLocaleOrderBySection_SortOrderAsc(LanguageCode locale);
 	List<SectionTranslation> findByLocaleAndSection_StatusOrderBySection_SortOrderAsc(LanguageCode locale, com.rra.taxhandbook.common.enums.ContentStatus status);
 	Optional<SectionTranslation> findBySlugAndLocale(String slug, LanguageCode locale);
+	Optional<SectionTranslation> findBySection_IdAndLocale(Long sectionId, LanguageCode locale);
+	boolean existsBySlugAndLocale(String slug, LanguageCode locale);
+	boolean existsBySlugAndLocaleAndSection_IdNot(String slug, LanguageCode locale, Long sectionId);
 }

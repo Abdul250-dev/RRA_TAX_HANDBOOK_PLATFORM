@@ -27,6 +27,10 @@
       "value": "1"
     },
     {
+      "key": "blockId",
+      "value": "1"
+    },
+    {
       "key": "parentSectionId",
       "value": "1"
     },
@@ -288,6 +292,24 @@
           }
         },
         {
+          "name": "Get User Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "summary"
+              ]
+            }
+          }
+        },
+        {
           "name": "Delete Role",
           "request": {
             "method": "DELETE",
@@ -450,6 +472,75 @@
           }
         },
         {
+          "name": "Get Users By Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users?status=INVITED",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "INVITED"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Suspended Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users?status=SUSPENDED",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "SUSPENDED"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users?search=admin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "admin"
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "Get User By Id",
           "request": {
             "method": "GET",
@@ -463,6 +554,25 @@
                 "api",
                 "users",
                 "{{userId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get User Activity",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}/activity",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{userId}}",
+                "activity"
               ]
             }
           }
@@ -578,6 +688,44 @@
                 "api",
                 "users",
                 "{{userId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Suspend User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}/suspend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{userId}}",
+                "suspend"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reactivate User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}/reactivate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "{{userId}}",
+                "reactivate"
               ]
             }
           }
@@ -1110,6 +1258,90 @@
           }
         },
         {
+          "name": "Get Admin Sections",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/content/sections?locale=EN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "content",
+                "sections"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "EN"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Section",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"parentId\": null,\n  \"type\": \"LANDING\",\n  \"sortOrder\": 10,\n  \"locale\": \"EN\",\n  \"name\": \"User Guides and Examples\",\n  \"slug\": \"user-guides-and-examples\",\n  \"summary\": \"Updated guided examples and procedural help for taxpayers.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/content/sections/{{sectionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "content",
+                "sections",
+                "{{sectionId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Transition Section Workflow",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"PUBLISH\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/content/sections/{{sectionId}}/workflow",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "content",
+                "sections",
+                "{{sectionId}}",
+                "workflow"
+              ]
+            }
+          }
+        },
+        {
           "name": "Create Topic",
           "request": {
             "method": "POST",
@@ -1133,6 +1365,158 @@
                 "admin",
                 "content",
                 "topics"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Admin Topic",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/content/topics/{{topicId}}?locale=EN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "content",
+                "topics",
+                "{{topicId}}"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "EN"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Admin Topics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/content/topics?locale=EN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "content",
+                "topics"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "EN"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Review Queue",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/content/topics/review-queue?locale=EN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "content",
+                "topics",
+                "review-queue"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "EN"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Publish Queue",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/content/topics/publish-queue?locale=EN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "content",
+                "topics",
+                "publish-queue"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "EN"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Topic",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sectionId\": \"{{sectionId}}\",\n  \"topicType\": \"TAX\",\n  \"sortOrder\": 1,\n  \"locale\": \"EN\",\n  \"title\": \"Withholding Tax\",\n  \"slug\": \"withholding-tax\",\n  \"summary\": \"Updated overview of withholding tax obligations and procedures.\",\n  \"introText\": \"Updated introduction for withholding tax requirements in Rwanda.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/content/topics/{{topicId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "content",
+                "topics",
+                "{{topicId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Topic",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/content/topics/{{topicId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "content",
+                "topics",
+                "{{topicId}}"
               ]
             }
           }
@@ -1163,6 +1547,55 @@
                 "topics",
                 "{{topicId}}",
                 "blocks"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Topic Block",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/content/blocks/{{blockId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "content",
+                "blocks",
+                "{{blockId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Topic Block",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"blockType\": \"RICH_TEXT\",\n  \"sortOrder\": 1,\n  \"anchorKey\": \"overview\",\n  \"locale\": \"EN\",\n  \"title\": \"Overview\",\n  \"body\": \"Updated opening explanation for the selected topic.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/content/blocks/{{blockId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "content",
+                "blocks",
+                "{{blockId}}"
               ]
             }
           }

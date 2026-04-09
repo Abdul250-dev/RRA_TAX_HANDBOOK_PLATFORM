@@ -72,4 +72,18 @@ public class Section {
 	public boolean isFeatured() { return featured; }
 	public Instant getCreatedAt() { return createdAt; }
 	public Instant getUpdatedAt() { return updatedAt; }
+
+	public void updateStructure(Section parent, SectionType type, Integer sortOrder) {
+		this.parent = parent;
+		this.type = type;
+		this.sortOrder = sortOrder;
+	}
+
+	public void changeStatus(ContentStatus status) {
+		this.status = status;
+	}
+
+	public void touch(Instant updatedAt) {
+		this.updatedAt = updatedAt;
+	}
 }
