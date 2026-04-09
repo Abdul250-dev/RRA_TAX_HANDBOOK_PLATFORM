@@ -16,6 +16,7 @@ import com.rra.taxhandbook.content.dto.AdminSectionResponse;
 import com.rra.taxhandbook.content.dto.AdminUpdateSectionRequest;
 import com.rra.taxhandbook.content.dto.AdminUpdateTopicBlockRequest;
 import com.rra.taxhandbook.content.dto.AdminUpdateTopicRequest;
+import com.rra.taxhandbook.content.dto.ContentSummaryResponse;
 import com.rra.taxhandbook.content.dto.SectionSummaryResponse;
 import com.rra.taxhandbook.content.dto.SectionWorkflowActionRequest;
 import com.rra.taxhandbook.content.dto.TopicBlockResponse;
@@ -87,6 +88,21 @@ public class ContentStructureService {
 				translation.getSection().getStatus().name()
 			))
 			.toList();
+	}
+
+	public ContentSummaryResponse getContentSummary() {
+		return new ContentSummaryResponse(
+			topicRepository.count(),
+			topicRepository.countByStatus(ContentStatus.DRAFT),
+			topicRepository.countByStatus(ContentStatus.REVIEW),
+			topicRepository.countByStatus(ContentStatus.APPROVED),
+			topicRepository.countByStatus(ContentStatus.PUBLISHED),
+			topicRepository.countByStatus(ContentStatus.ARCHIVED),
+			sectionRepository.count(),
+			sectionRepository.countByStatus(ContentStatus.DRAFT),
+			sectionRepository.countByStatus(ContentStatus.PUBLISHED),
+			sectionRepository.countByStatus(ContentStatus.ARCHIVED)
+		);
 	}
 
 	public List<TopicSummaryResponse> getAdminTopics(LanguageCode locale, ContentStatus status) {

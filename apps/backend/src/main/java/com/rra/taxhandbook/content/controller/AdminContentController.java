@@ -21,6 +21,7 @@ import com.rra.taxhandbook.content.dto.AdminSectionResponse;
 import com.rra.taxhandbook.content.dto.AdminUpdateSectionRequest;
 import com.rra.taxhandbook.content.dto.AdminUpdateTopicBlockRequest;
 import com.rra.taxhandbook.content.dto.AdminUpdateTopicRequest;
+import com.rra.taxhandbook.content.dto.ContentSummaryResponse;
 import com.rra.taxhandbook.content.dto.SectionSummaryResponse;
 import com.rra.taxhandbook.content.dto.SectionWorkflowActionRequest;
 import com.rra.taxhandbook.content.dto.TopicBlockResponse;
@@ -47,6 +48,12 @@ public class AdminContentController {
 	@PreAuthorize("hasAnyRole('EDITOR','REVIEWER','PUBLISHER','ADMIN','SUPER_ADMIN')")
 	public java.util.List<AdminSectionResponse> getSections(@RequestParam(defaultValue = "EN") LanguageCode locale) {
 		return contentStructureService.getAdminSections(locale);
+	}
+
+	@GetMapping("/summary")
+	@PreAuthorize("hasAnyRole('EDITOR','REVIEWER','PUBLISHER','ADMIN','SUPER_ADMIN')")
+	public ContentSummaryResponse getSummary() {
+		return contentStructureService.getContentSummary();
 	}
 
 	@GetMapping("/topics")
