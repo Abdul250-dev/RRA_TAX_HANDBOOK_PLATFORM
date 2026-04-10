@@ -5,7 +5,7 @@ import { AUTH_TOKEN_COOKIE } from "./lib/api/auth";
 
 const publicPaths = ["/login", "/_next", "/favicon.ico"];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(AUTH_TOKEN_COOKIE)?.value;
   const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
