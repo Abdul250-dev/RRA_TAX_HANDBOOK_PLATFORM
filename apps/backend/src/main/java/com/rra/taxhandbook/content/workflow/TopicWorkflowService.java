@@ -12,20 +12,31 @@ import com.rra.taxhandbook.common.exception.ResourceNotFoundException;
 import com.rra.taxhandbook.common.exception.UnauthorizedException;
 import com.rra.taxhandbook.content.dto.TopicWorkflowActionRequest;
 import com.rra.taxhandbook.content.dto.TopicWorkflowResponse;
+import com.rra.taxhandbook.content.section.repository.SectionRepository;
 import com.rra.taxhandbook.content.topic.entity.Topic;
 import com.rra.taxhandbook.content.topic.entity.TopicTranslation;
 import com.rra.taxhandbook.content.topic.repository.TopicRepository;
 import com.rra.taxhandbook.content.topic.repository.TopicTranslationRepository;
+import com.rra.taxhandbook.content.topicblock.repository.TopicBlockRepository;
 
 @Service
 public class TopicWorkflowService {
 
 	private final TopicRepository topicRepository;
 	private final TopicTranslationRepository topicTranslationRepository;
+	private final TopicBlockRepository topicBlockRepository;
+	private final SectionRepository sectionRepository;
 
-	public TopicWorkflowService(TopicRepository topicRepository, TopicTranslationRepository topicTranslationRepository) {
+	public TopicWorkflowService(
+		TopicRepository topicRepository,
+		TopicTranslationRepository topicTranslationRepository,
+		TopicBlockRepository topicBlockRepository,
+		SectionRepository sectionRepository
+	) {
 		this.topicRepository = topicRepository;
 		this.topicTranslationRepository = topicTranslationRepository;
+		this.topicBlockRepository = topicBlockRepository;
+		this.sectionRepository = sectionRepository;
 	}
 
 	public ApiResponse<TopicWorkflowResponse> transitionTopic(Long topicId, TopicWorkflowActionRequest request, Authentication authentication) {
@@ -38,6 +49,7 @@ public class TopicWorkflowService {
 		applyAction(topic, action, authentication);
 		topic.touch(Instant.now());
 		topicRepository.save(topic);
+		syncDependentContent(topic);
 
 		return new ApiResponse<>("Topic workflow updated", new TopicWorkflowResponse(
 			topic.getId(),
@@ -89,6 +101,21 @@ public class TopicWorkflowService {
 				requireStatus(topic, ContentStatus.APPROVED, ContentStatus.PUBLISHED, ContentStatus.ARCHIVED);
 				topic.changeStatus(ContentStatus.ARCHIVED);
 			}
+		}
+	}
+
+	private void syncDependentContent(Topic topic) {
+		ContentStatus topicStatus = topic.getStatus();
+		var blocks = topicBlockRepository.findByTopic_IdOrderBySortOrderAsc(topic.getId());
+		blocks.forEach(block -> {
+			block.changeStatus(topicStatus);
+			block.touch(Instant.now());
+		});
+		topicBlockRepository.saveAll(blocks);
+		if (topicStatus == ContentStatus.PUBLISHED && topic.getSection().getStatus() != ContentStatus.PUBLISHED) {
+			topic.getSection().changeStatus(ContentStatus.PUBLISHED);
+			topic.getSection().touch(Instant.now());
+			sectionRepository.save(topic.getSection());
 		}
 	}
 

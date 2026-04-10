@@ -79,6 +79,12 @@ public class Topic {
 	public Instant getCreatedAt() { return createdAt; }
 	public Instant getUpdatedAt() { return updatedAt; }
 
+	public void updateStructure(Section section, TopicType topicType, Integer sortOrder) {
+		this.section = section;
+		this.topicType = topicType;
+		this.sortOrder = sortOrder;
+	}
+
 	public void changeStatus(ContentStatus status) {
 		this.status = status;
 	}

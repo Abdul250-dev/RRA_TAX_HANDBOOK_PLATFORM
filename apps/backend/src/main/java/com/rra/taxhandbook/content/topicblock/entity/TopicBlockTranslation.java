@@ -49,4 +49,9 @@ public class TopicBlockTranslation {
 	public LanguageCode getLocale() { return locale; }
 	public String getTitle() { return title; }
 	public String getBody() { return body; }
+
+	public void update(String title, String body) {
+		this.title = title;
+		this.body = body;
+	}
 }

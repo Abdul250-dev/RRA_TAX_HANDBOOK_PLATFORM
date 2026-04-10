@@ -1,1 +1,24 @@
-export function ProtectedRoute({ children }: { children: React.ReactNode }) { return <>{children}</>; }
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
+import { routes } from "../../lib/constants/routes";
+import { useAuth } from "../../hooks/useAuth";
+
+export function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace(routes.login);
+    }
+  }, [isAuthenticated, router]);
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return <>{children}</>;
+}

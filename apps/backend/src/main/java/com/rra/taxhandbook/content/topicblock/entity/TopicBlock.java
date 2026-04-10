@@ -73,4 +73,18 @@ public class TopicBlock {
 	public boolean isHighlighted() { return highlighted; }
 	public Instant getCreatedAt() { return createdAt; }
 	public Instant getUpdatedAt() { return updatedAt; }
+
+	public void updateStructure(TopicBlockType blockType, Integer sortOrder, String anchorKey) {
+		this.blockType = blockType;
+		this.sortOrder = sortOrder;
+		this.anchorKey = anchorKey;
+	}
+
+	public void changeStatus(ContentStatus status) {
+		this.status = status;
+	}
+
+	public void touch(Instant updatedAt) {
+		this.updatedAt = updatedAt;
+	}
 }

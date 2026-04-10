@@ -54,4 +54,10 @@ public class SectionTranslation {
 	public String getName() { return name; }
 	public String getSlug() { return slug; }
 	public String getSummary() { return summary; }
+
+	public void update(String name, String slug, String summary) {
+		this.name = name;
+		this.slug = slug;
+		this.summary = summary;
+	}
 }
