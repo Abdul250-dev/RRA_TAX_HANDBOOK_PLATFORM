@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { DashboardStats } from "../../components/admin/DashboardStats";
 import { DataTable } from "../../components/admin/DataTable";
@@ -252,6 +253,10 @@ function ChartPanel({ contentSummary }: { contentSummary: ContentSummary }) {
 async function getDashboardData() {
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_TOKEN_COOKIE)?.value;
+
+  if (!token) {
+    redirect("/login");
+  }
 
   try {
     const [userSummary, contentSummary, reviewQueue, publishQueue] = await Promise.all([

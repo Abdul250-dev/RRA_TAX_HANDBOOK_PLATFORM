@@ -61,7 +61,9 @@ public class UserService {
 	public List<UserResponse> getUsers(String status, String search) {
 		String normalizedStatus = normalizeFilter(status);
 		String normalizedSearch = normalizeFilter(search);
-		return userRepository.findForAdminList(normalizedStatus, normalizedSearch).stream()
+		return userRepository.findAllByOrderByCreatedAtDesc().stream()
+			.filter(user -> matchesStatus(user, normalizedStatus))
+			.filter(user -> matchesSearch(user, normalizedSearch))
 			.map(this::toResponse)
 			.toList();
 	}
@@ -384,5 +386,20 @@ public class UserService {
 		}
 		String trimmed = value.trim();
 		return trimmed.isEmpty() ? null : trimmed;
+	}
+
+	private boolean matchesStatus(User user, String status) {
+		return status == null || user.getStatus().equalsIgnoreCase(status);
+	}
+
+	private boolean matchesSearch(User user, String search) {
+		if (search == null) {
+			return true;
+		}
+
+		String normalizedSearch = search.toLowerCase();
+		return user.getFullName().toLowerCase().contains(normalizedSearch)
+			|| user.getEmail().toLowerCase().contains(normalizedSearch)
+			|| user.getUserCode().toLowerCase().contains(normalizedSearch);
 	}
 }
