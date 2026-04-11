@@ -10,9 +10,9 @@ const inputStyle: React.CSSProperties = {
   width: '100%',
   background: 'transparent',
   border: 'none',
-  borderBottom: '1px solid rgba(255,254,254,0.30)',
+  borderBottom: '1px solid rgba(9,21,76,0.22)',
   padding: '10px 0 10px 36px',
-  color: '#fffefe',
+  color: '#09154c',
   fontSize: '0.95rem',
   outline: 'none',
   caretColor: '#ffae1b',
@@ -57,9 +57,8 @@ export function LoginForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '28px' }}
+      style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '24px' }}
     >
-      {/* Email field */}
       <div style={{ position: 'relative' }}>
         <span style={iconWrapStyle}>
           <svg
@@ -85,7 +84,6 @@ export function LoginForm() {
         />
       </div>
 
-      {/* Password field */}
       <div style={{ position: 'relative' }}>
         <span style={iconWrapStyle}>
           <svg
@@ -111,14 +109,13 @@ export function LoginForm() {
         />
       </div>
 
-      {/* Remember me + Forgot */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <label
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            color: 'rgba(255,254,254,0.65)',
+            color: 'rgba(9,21,76,0.65)',
             fontSize: '0.82rem',
             cursor: 'pointer',
           }}
@@ -142,12 +139,11 @@ export function LoginForm() {
         </button>
       </div>
 
-      {/* Error */}
       {error && (
         <p
           style={{
             margin: 0,
-            color: '#ffae1b',
+            color: '#c9505c',
             fontSize: '0.85rem',
             textAlign: 'center',
             background: 'rgba(255,174,27,0.12)',
@@ -160,7 +156,6 @@ export function LoginForm() {
         </p>
       )}
 
-      {/* Login button */}
       <button
         type="submit"
         disabled={isSubmitting}
@@ -191,13 +186,12 @@ export function LoginForm() {
         {isSubmitting ? 'Signing in...' : 'Login'}
       </button>
 
-      {/* Footer note */}
       <p
         style={{
           margin: 0,
           textAlign: 'center',
           fontSize: '0.75rem',
-          color: 'rgba(255,254,254,0.35)',
+          color: 'rgba(9,21,76,0.42)',
           letterSpacing: '0.04em',
         }}
       >
