@@ -585,84 +585,93 @@ select {
 
 .login-page {
   min-height: 100vh;
-  padding: 24px;
+  padding: 20px;
   display: grid;
   place-items: center;
+  background: #fff;
 }
 
 .login-shell {
-  width: min(1180px, 100%);
-  min-height: min(760px, calc(100vh - 48px));
-  background: rgba(255, 254, 254, 0.95);
-  border: 1px solid rgba(81, 150, 207, 0.22);
-  border-radius: 32px;
-  box-shadow: 0 28px 60px rgba(9, 21, 76, 0.12);
+  width: min(1320px, 100%);
+  min-height: min(860px, calc(100vh - 40px));
+  background: #fff;
+  border: 2px solid rgba(81, 150, 207, 0.12);
+  border-radius: 36px;
+  box-shadow: 0 22px 60px rgba(9, 21, 76, 0.1);
   overflow: hidden;
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
+  grid-template-columns: 1.08fr 0.92fr;
 }
 
 .login-illustration {
   position: relative;
-  padding: 56px;
+  padding: 68px 56px;
   display: grid;
   align-content: center;
   justify-items: center;
-  gap: 28px;
-  background:
-    radial-gradient(circle at top left, rgba(81, 150, 207, 0.15), transparent 30%),
-    radial-gradient(circle at bottom left, rgba(90, 180, 63, 0.11), transparent 24%),
-    linear-gradient(180deg, rgba(245, 248, 252, 0.88), rgba(255, 254, 254, 0.96));
+  gap: 34px;
+  background: #fff;
 }
 
 .login-orb {
-  width: 320px;
-  height: 320px;
-  border-radius: 50%;
-  background: rgba(9, 21, 76, 0.04);
+  width: min(100%, 500px);
+  min-height: 420px;
+  padding: 26px;
+  border-radius: 999px;
+  background: radial-gradient(circle at center, rgba(241, 245, 249, 0.92), rgba(250, 251, 252, 0.98));
   display: grid;
   place-items: center;
 }
 
-.login-device {
-  width: 176px;
+.brand-showcase {
+  width: 100%;
   display: grid;
   justify-items: center;
+  gap: 20px;
 }
 
-.device-screen {
-  width: 176px;
-  height: 116px;
-  border-radius: 8px;
-  background: linear-gradient(180deg, #566677, #455363);
-  border: 6px solid #35414d;
-  position: relative;
+.brand-seal {
+  width: 240px;
+  height: 240px;
+  border-radius: 40px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 248, 252, 0.96));
+  border: 1px solid rgba(81, 150, 207, 0.14);
+  box-shadow: 0 18px 40px rgba(14, 49, 89, 0.08);
+  display: grid;
+  place-items: center;
 }
 
-.device-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 3px solid rgba(255, 254, 254, 0.7);
-  position: absolute;
-  top: 24px;
-  left: 50%;
-  transform: translateX(-50%);
+.brand-seal-image {
+  width: 164px;
+  height: auto;
+  object-fit: contain;
 }
 
-.device-avatar-base {
-  width: 58px;
-  height: 30px;
-  border-radius: 30px 30px 12px 12px;
-  top: 62px;
+.brand-data-card {
+  width: min(100%, 340px);
+  padding: 18px 20px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(9, 21, 76, 0.97), rgba(19, 46, 87, 0.94));
+  box-shadow: 0 18px 30px rgba(9, 21, 76, 0.18);
+  display: grid;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.88);
 }
 
-.device-stand {
-  width: 82px;
-  height: 14px;
-  margin-top: 10px;
-  border-radius: 999px;
-  background: rgba(13, 20, 30, 0.12);
+.brand-data-card strong {
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.brand-data-card span {
+  line-height: 1.55;
+}
+
+.brand-data-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
 }
 
 .floating-shape {
@@ -670,44 +679,44 @@ select {
 }
 
 .floating-shape-blue {
-  width: 18px;
-  height: 18px;
-  left: 108px;
-  top: 224px;
-  border: 4px solid #11a5eb;
+  width: 22px;
+  height: 22px;
+  left: 86px;
+  top: 198px;
+  border: 4px solid var(--rra-blue-secondary);
   border-radius: 50%;
 }
 
 .floating-shape-green {
   width: 0;
   height: 0;
-  right: 184px;
-  top: 242px;
+  right: 156px;
+  top: 222px;
   border-top: 10px solid transparent;
   border-bottom: 10px solid transparent;
-  border-left: 16px solid #6dc446;
+  border-left: 16px solid var(--rra-green);
 }
 
 .floating-shape-orange {
   width: 0;
   height: 0;
-  left: 102px;
-  bottom: 238px;
+  left: 92px;
+  bottom: 220px;
   border-left: 9px solid transparent;
   border-right: 9px solid transparent;
-  border-bottom: 16px solid #6dc446;
+  border-bottom: 16px solid var(--rra-orange);
 }
 
 .floating-shape-square {
   width: 12px;
   height: 12px;
-  top: 160px;
-  right: 246px;
-  border: 3px solid rgba(14, 0, 0, 0.12);
+  top: 142px;
+  right: 216px;
+  border: 3px solid rgba(14, 0, 0, 0.1);
 }
 
 .login-copy {
-  max-width: 460px;
+  max-width: 520px;
   text-align: center;
 }
 
@@ -739,18 +748,54 @@ select {
   margin-top: 14px;
   color: var(--text-muted);
   line-height: 1.7;
+  font-size: 1rem;
 }
 
 .login-panel {
   display: grid;
   place-items: center;
-  padding: 48px;
+  padding: 52px;
+  background: #fff;
+}
+
+.login-panel-frame {
+  width: min(100%, 500px);
+  min-height: 600px;
+  padding: 48px 42px;
+  border-radius: 36px;
+  border: 1px solid rgba(20, 45, 74, 0.08);
+  background: #fff;
+  box-shadow: 0 20px 40px rgba(8, 27, 54, 0.06);
+  display: grid;
+  align-content: center;
+  gap: 30px;
+}
+
+.login-panel-intro {
+  display: grid;
+  gap: 10px;
+}
+
+.login-panel-intro h3,
+.login-panel-intro p {
+  margin: 0;
+}
+
+.login-panel-intro h3 {
+  font-size: 2.1rem;
+  color: #142d4a;
+  letter-spacing: -0.04em;
+}
+
+.login-panel-intro p {
+  color: var(--text-muted);
+  line-height: 1.65;
 }
 
 .login-form {
-  width: min(100%, 360px);
+  width: 100%;
   display: grid;
-  gap: 18px;
+  gap: 22px;
 }
 
 .login-form-header h1,
@@ -759,8 +804,8 @@ select {
 }
 
 .login-form-header h1 {
-  font-size: clamp(2rem, 3vw, 2.6rem);
-  color: var(--primary);
+  font-size: clamp(2rem, 3vw, 2.5rem);
+  color: #142d4a;
   letter-spacing: -0.04em;
 }
 
@@ -772,41 +817,71 @@ select {
 
 .login-field {
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 .login-field span {
-  font-size: 0.86rem;
-  font-weight: 700;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #18293d;
+}
+
+.login-field-description {
+  font-size: 0.9rem;
   color: var(--text-muted);
 }
 
 .login-field input {
-  height: 56px;
-  border: 1px solid transparent;
+  height: 62px;
+  border: 1px solid rgba(20, 45, 74, 0.14);
   border-radius: 999px;
-  padding: 0 20px;
-  background: #eef1f4;
+  padding: 0 22px;
+  background: #f1f4f7;
   color: var(--text);
   outline: 0;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .login-field input:focus {
   border-color: rgba(81, 150, 207, 0.45);
-  background: var(--surface);
+  box-shadow: 0 0 0 3px rgba(81, 150, 207, 0.1);
+}
+
+.login-actions {
+  display: grid;
+  gap: 14px;
+  padding-top: 6px;
+}
+
+.login-submit,
+.login-link {
+  height: 58px;
+  border-radius: 999px;
+  padding: 0 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease,
+    background 0.2s ease;
 }
 
 .login-submit {
-  height: 54px;
   border: 0;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--success), #6dc446);
-  color: var(--rra-white);
-  font-weight: 800;
+  background: linear-gradient(90deg, var(--rra-green), #68bf48);
+  color: #fff;
+  box-shadow: 0 16px 28px rgba(90, 180, 63, 0.24);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  cursor: pointer;
-  box-shadow: 0 16px 28px rgba(90, 180, 63, 0.26);
+}
+
+.login-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 30px rgba(90, 180, 63, 0.28);
 }
 
 .login-submit:disabled {
@@ -815,11 +890,17 @@ select {
 }
 
 .login-link {
-  justify-self: center;
-  background: transparent;
   border: 0;
-  color: var(--text-muted);
-  cursor: pointer;
+  background: transparent;
+  color: #657487;
+  height: auto;
+  padding: 0;
+  justify-self: center;
+}
+
+.login-link:hover {
+  background: transparent;
+  color: var(--primary);
 }
 
 .login-error {
@@ -880,7 +961,21 @@ select {
   }
 
   .login-orb {
-    width: 240px;
-    height: 240px;
+    min-height: 300px;
+    padding: 20px;
+  }
+
+  .brand-seal {
+    width: 180px;
+    height: 180px;
+  }
+
+  .brand-seal-image {
+    width: 128px;
+  }
+
+  .login-panel-frame {
+    min-height: unset;
+    padding: 28px 22px;
   }
 }
