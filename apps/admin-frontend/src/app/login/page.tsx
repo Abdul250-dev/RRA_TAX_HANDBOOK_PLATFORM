@@ -1,66 +1,24 @@
 import Image from 'next/image';
+
 import { LoginForm } from '../../components/auth/LoginForm';
 
 export default function LoginPage() {
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        display: 'grid',
-        placeItems: 'center',
-        background: '#5196CF',
-      }}
-    >
-      <div
-        style={{
-          width: 'min(380px, calc(100% - 40px))',
-          background: '#fffefe',
-          border: '1px solid rgba(81,150,207,0.18)',
-          borderRadius: '24px',
-          padding: '40px 32px',
-          boxShadow: '0 18px 40px rgba(9,21,76,0.08)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '28px',
-        }}
-      >
-        <div
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}
-        >
-          <div
-            style={{
-              width: '76px',
-              height: '76px',
-              borderRadius: '50%',
-              background: '#fffefe',
-              border: '2px solid #ffae1b',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 10px 24px rgba(9,21,76,0.08)',
-            }}
-          >
+    <main className="grid min-h-screen place-items-center bg-[#5196CF] px-5 py-8 sm:px-6">
+      <div className="flex w-full max-w-[380px] flex-col items-center gap-7 rounded-3xl border border-[rgba(81,150,207,0.18)] bg-[var(--rra-white)] px-8 py-10 shadow-[0_18px_40px_rgba(9,21,76,0.08)] sm:px-10">
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex h-[76px] w-[76px] items-center justify-center rounded-full border-2 border-[var(--rra-orange)] bg-[var(--rra-white)] shadow-[0_10px_24px_rgba(9,21,76,0.08)]">
             <Image
               alt="RRA Logo"
-              src="/assets/bg_rra_logo.png"
-              width={52}
+              className="rounded-full object-contain"
               height={52}
               priority
-              style={{ objectFit: 'contain', borderRadius: '50%' }}
+              src="/assets/bg_rra_logo.png"
+              width={52}
             />
           </div>
-          <h1
-            style={{
-              margin: 0,
-              color: '#09154c',
-              fontSize: '0.82rem',
-              fontWeight: 600,
-              letterSpacing: '0.28em',
-              textTransform: 'uppercase',
-            }}
-          >
-            Admin Login
+          <h1 className="m-0 text-center text-[0.82rem] font-semibold uppercase tracking-[0.28em] text-[var(--rra-blue)]">
+            User Login
           </h1>
         </div>
 
