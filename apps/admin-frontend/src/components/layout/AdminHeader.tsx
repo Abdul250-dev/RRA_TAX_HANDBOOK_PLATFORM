@@ -1,6 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { clearSession } from "../../lib/api/auth";
 import { routes } from "../../lib/constants/routes";
@@ -8,7 +11,106 @@ import { useAuth } from "../../hooks/useAuth";
 
 export function AdminHeader() {
   const router = useRouter();
+  const pathname = usePathname();
   const { role, username } = useAuth();
+  const searchRef = useRef<HTMLFormElement | null>(null);
+  const profileRef = useRef<HTMLDivElement | null>(null);
+  const [query, setQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  const adminName = username ?? "RRA Admin";
+  const adminRole = role ?? "Authorized User";
+  const firstName = adminName.split(" ").filter(Boolean)[0] ?? "Admin";
+  const initials = adminName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+
+  const navigationItems = useMemo(
+    () => [
+      { href: routes.dashboard, label: "Dashboard" },
+      { href: routes.users, label: "Users" },
+      { href: routes.content, label: "Content" },
+      { href: routes.roles, label: "Roles" },
+      { href: routes.auditLogs, label: "Audit Logs" },
+      { href: routes.settings, label: "Settings" },
+    ],
+    [],
+  );
+
+  const searchItems = useMemo(
+    () => [
+      {
+        href: routes.dashboard,
+        label: "Dashboard",
+        description: "Overview, queues, and publishing flow",
+        keywords: ["overview", "home", "stats", "summary", "queue"],
+      },
+      {
+        href: routes.users,
+        label: "Users",
+        description: "Manage admin users and access",
+        keywords: ["accounts", "team", "members", "permissions"],
+      },
+      {
+        href: routes.content,
+        label: "Articles",
+        description: "Review and publish handbook content",
+        keywords: ["content", "topics", "posts", "handbook"],
+      },
+      {
+        href: routes.roles,
+        label: "Roles",
+        description: "Control responsibilities and privileges",
+        keywords: ["permissions", "access", "security"],
+      },
+      {
+        href: routes.auditLogs,
+        label: "Audit Logs",
+        description: "Track changes and admin activity",
+        keywords: ["history", "activity", "logs", "events"],
+      },
+      {
+        href: routes.settings,
+        label: "Settings",
+        description: "Adjust platform and admin preferences",
+        keywords: ["preferences", "config", "system"],
+      },
+    ],
+    [],
+  );
+
+  const trimmedQuery = query.trim().toLowerCase();
+  const searchResults = useMemo(() => {
+    if (!trimmedQuery) {
+      return searchItems.slice(0, 5);
+    }
+
+    return searchItems.filter((item) => {
+      const haystack = [item.label, item.description, ...item.keywords].join(" ").toLowerCase();
+      return haystack.includes(trimmedQuery);
+    });
+  }, [searchItems, trimmedQuery]);
+
+  useEffect(() => {
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target as Node;
+
+      if (searchRef.current && !searchRef.current.contains(target)) {
+        setIsSearchOpen(false);
+      }
+
+      if (profileRef.current && !profileRef.current.contains(target)) {
+        setIsProfileOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, []);
 
   function handleLogout() {
     clearSession();
@@ -16,32 +118,150 @@ export function AdminHeader() {
     router.refresh();
   }
 
+  function handleSearchSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const firstResult = searchResults[0];
+    if (!firstResult) {
+      return;
+    }
+
+    setIsSearchOpen(false);
+    router.push(firstResult.href);
+  }
+
+  function handleSearchSelect(href: string) {
+    setQuery("");
+    setIsSearchOpen(false);
+    router.push(href);
+  }
+
   return (
     <header className="admin-header">
-      <label className="search-shell" aria-label="Search">
-        <span aria-hidden="true">Q</span>
-        <input placeholder="Search users, topics, queues..." type="search" />
-      </label>
+      <div className="header-left">
+        <div className="header-brand">
+          <div className="header-brand-logo" aria-hidden="true">
+            <Image
+              alt="RRA Logo"
+              className="rounded-full object-contain"
+              height={36}
+              priority
+              src="/assets/bg_rra_logo.png"
+              width={36}
+            />
+          </div>
+          <div className="header-brand-copy">
+            <span className="header-brand-name">RRA Admin</span>
+            <span className="header-brand-subtitle">Tax Handbook Platform</span>
+          </div>
+        </div>
+      </div>
+
+      <nav className="header-nav" aria-label="Primary">
+        {navigationItems.map((item) => {
+          const isActive =
+            pathname === item.href ||
+            (item.href !== routes.dashboard && pathname?.startsWith(item.href));
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`header-nav-link${isActive ? " header-nav-link-active" : ""}`}
+            >
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
 
       <div className="header-actions">
+        <form
+          className="header-search"
+          onSubmit={handleSearchSubmit}
+          ref={searchRef}
+          role="search"
+        >
+          <label className="search-shell" aria-label="Search admin pages">
+            <span className="search-icon" aria-hidden="true">
+              Q
+            </span>
+            <input
+              onChange={(event) => setQuery(event.target.value)}
+              onFocus={() => setIsSearchOpen(true)}
+              placeholder="Search admin pages..."
+              type="search"
+              value={query}
+            />
+          </label>
+
+          {isSearchOpen ? (
+            <div className="search-results" role="listbox" aria-label="Search results">
+              {searchResults.length > 0 ? (
+                searchResults.map((item) => (
+                  <button
+                    key={item.href}
+                    className="search-result-item"
+                    onClick={() => handleSearchSelect(item.href)}
+                    type="button"
+                  >
+                    <span className="search-result-label">{item.label}</span>
+                    <span className="search-result-description">{item.description}</span>
+                  </button>
+                ))
+              ) : (
+                <div className="search-empty-state">
+                  No matching page found. Try users, articles, roles, or logs.
+                </div>
+              )}
+            </div>
+          ) : null}
+        </form>
+
         <button className="icon-button" type="button" aria-label="Switch language">
           EN
         </button>
-        <button className="icon-button" type="button" aria-label="Notifications">
-          1
-        </button>
-        <div className="user-chip" aria-label="Current user">
-          <span className="avatar">RA</span>
-          <div>
-            <div style={{ fontWeight: 700 }}>{username ?? "RRA Admin"}</div>
-            <div style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>
-              {role ?? "Authorized User"}
+        <div className="profile-menu" ref={profileRef}>
+          <button
+            aria-expanded={isProfileOpen}
+            aria-haspopup="menu"
+            className="user-chip"
+            onClick={() => setIsProfileOpen((current) => !current)}
+            type="button"
+          >
+            <span className="avatar">{initials || "RA"}</span>
+            <span className="user-copy">
+              <span className="user-name">{firstName}</span>
+              <span className="user-role">{adminRole}</span>
+            </span>
+            <span className="user-chip-toggle" aria-hidden="true">
+              v
+            </span>
+          </button>
+
+          {isProfileOpen ? (
+            <div className="profile-dropdown" role="menu" aria-label="Admin menu">
+              <div className="profile-dropdown-copy">
+                <strong>{adminName}</strong>
+                <span>{adminRole}</span>
+              </div>
+              <button
+                className="profile-dropdown-action"
+                onClick={() => handleSearchSelect(routes.settings)}
+                type="button"
+              >
+                Open settings
+              </button>
+              <button
+                className="profile-dropdown-action logout-button"
+                onClick={handleLogout}
+                type="button"
+              >
+                Logout
+              </button>
             </div>
-          </div>
+          ) : null}
         </div>
-        <button className="logout-button" onClick={handleLogout} type="button">
-          Logout
-        </button>
       </div>
     </header>
   );

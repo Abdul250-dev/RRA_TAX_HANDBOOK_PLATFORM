@@ -355,70 +355,7 @@ export default async function DashboardPage() {
         </section>
 
         <DashboardStats items={statItems} />
-
-        <section className="dashboard-grid">
-          <ChartPanel contentSummary={contentSummary} />
-
-          <QueuePanel
-            items={reviewQueue}
-            subtitle="Topics that need reviewer attention before they move forward."
-            title="Review Queue"
-          />
-        </section>
-
-        <section className="dashboard-grid">
-          <section className="panel-card">
-            <div className="panel-header">
-              <div>
-                <h2 className="panel-title">Operational Snapshot</h2>
-                <p className="panel-subtitle">
-                  Quick counts ready for cards, tables, and future dashboard widgets.
-                </p>
-              </div>
-              <FilterBar
-                options={[
-                  { label: "Overview", active: true },
-                  { label: "Users" },
-                  { label: "Content" },
-                ]}
-              />
-            </div>
-
-            <DataTable
-              columns={[
-                {
-                  key: "metric",
-                  header: "Metric",
-                  render: (row: (typeof operationsRows)[number]) => (
-                    <div>
-                      <strong>{row.metric}</strong>
-                      <div className="metric-muted">{row.detail}</div>
-                    </div>
-                  ),
-                },
-                {
-                  key: "value",
-                  header: "Primary",
-                  render: (row: (typeof operationsRows)[number]) => row.value,
-                },
-                {
-                  key: "trend",
-                  header: "Secondary",
-                  render: (row: (typeof operationsRows)[number]) => (
-                    <span className="metric-positive">{row.trend}</span>
-                  ),
-                },
-              ]}
-              rows={operationsRows}
-            />
-          </section>
-
-          <QueuePanel
-            items={publishQueue}
-            subtitle="Approved topics that are ready for the publisher to release."
-            title="Publish Queue"
-          />
-        </section>
+      
       </main>
     </AdminLayout>
   );
