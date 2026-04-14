@@ -3,26 +3,39 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { Bell, LogOut, Settings } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+import { useAuth } from "../../hooks/useAuth";
 import { clearSession } from "../../lib/api/auth";
 import { routes } from "../../lib/constants/routes";
-import { useAuth } from "../../hooks/useAuth";
 
 export function AdminHeader() {
   const router = useRouter();
   const pathname = usePathname();
-  const { role, username } = useAuth();
+  const { username } = useAuth();
   const searchRef = useRef<HTMLFormElement | null>(null);
-  const profileRef = useRef<HTMLDivElement | null>(null);
   const [query, setQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  const adminName = username ?? "RRA Admin";
-  const adminRole = role ?? "Authorized User";
-  const firstName = adminName.split(" ").filter(Boolean)[0] ?? "Admin";
-  const initials = adminName
+  const normalizedUsername = username?.trim() ?? "";
+  const isEmailUsername = normalizedUsername.includes("@");
+  const adminName = isEmailUsername ? "Admin User" : normalizedUsername || "RRA Admin";
+  const adminEmail = isEmailUsername ? normalizedUsername : "admin@example.com";
+  const avatarLabel = isEmailUsername ? adminEmail : adminName;
+  const initials = avatarLabel
+    .replace(/[^a-zA-Z0-9 ]/g, " ")
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
@@ -57,7 +70,7 @@ export function AdminHeader() {
       },
       {
         href: routes.content,
-        label: "Articles",
+        label: "Content",
         description: "Review and publish handbook content",
         keywords: ["content", "topics", "posts", "handbook"],
       },
@@ -101,10 +114,6 @@ export function AdminHeader() {
 
       if (searchRef.current && !searchRef.current.contains(target)) {
         setIsSearchOpen(false);
-      }
-
-      if (profileRef.current && !profileRef.current.contains(target)) {
-        setIsProfileOpen(false);
       }
     }
 
@@ -211,7 +220,7 @@ export function AdminHeader() {
                 ))
               ) : (
                 <div className="search-empty-state">
-                  No matching page found. Try users, articles, roles, or logs.
+                  No matching page found. Try users, content, roles, or logs.
                 </div>
               )}
             </div>
@@ -221,47 +230,64 @@ export function AdminHeader() {
         <button className="icon-button" type="button" aria-label="Switch language">
           EN
         </button>
-        <div className="profile-menu" ref={profileRef}>
-          <button
-            aria-expanded={isProfileOpen}
-            aria-haspopup="menu"
-            className="user-chip"
-            onClick={() => setIsProfileOpen((current) => !current)}
-            type="button"
-          >
-            <span className="avatar">{initials || "RA"}</span>
-            <span className="user-copy">
-              <span className="user-name">{firstName}</span>
-              <span className="user-role">{adminRole}</span>
-            </span>
-            <span className="user-chip-toggle" aria-hidden="true">
-              v
-            </span>
-          </button>
 
-          {isProfileOpen ? (
-            <div className="profile-dropdown" role="menu" aria-label="Admin menu">
-              <div className="profile-dropdown-copy">
-                <strong>{adminName}</strong>
-                <span>{adminRole}</span>
-              </div>
-              <button
-                className="profile-dropdown-action"
-                onClick={() => handleSearchSelect(routes.settings)}
-                type="button"
-              >
-                Open settings
-              </button>
-              <button
-                className="profile-dropdown-action logout-button"
-                onClick={handleLogout}
-                type="button"
-              >
-                Logout
-              </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              aria-label="Open profile menu"
+              className="rounded-full"
+              size="icon"
+              variant="ghost"
+            >
+              <Avatar className="h-[38px] w-[38px]">
+                <AvatarFallback>{initials || "RA"}</AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent align="end" className="admin-profile-dropdown" sideOffset={12}>
+            <div className="profile-dropdown-header">
+              <strong>{adminName}</strong>
+              <span>{adminEmail}</span>
             </div>
-          ) : null}
-        </div>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                className="profile-dropdown-item"
+                onSelect={() => handleSearchSelect(routes.settings)}
+              >
+                <span className="profile-item-icon" aria-hidden="true">
+                  <Settings size={18} strokeWidth={1.9} />
+                </span>
+                <span className="profile-item-label">Settings</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem className="profile-dropdown-item">
+                <span className="profile-item-icon" aria-hidden="true">
+                  <Bell size={18} strokeWidth={1.9} />
+                </span>
+                <span className="profile-item-label">Notifications</span>
+                <span className="profile-item-badge">4</span>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                className="profile-dropdown-item profile-dropdown-item-logout"
+                onSelect={handleLogout}
+              >
+                <span className="profile-item-icon" aria-hidden="true">
+                  <LogOut size={18} strokeWidth={1.9} />
+                </span>
+                <span className="profile-item-label">Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
