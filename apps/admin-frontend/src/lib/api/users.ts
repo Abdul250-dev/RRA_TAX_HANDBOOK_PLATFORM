@@ -1,4 +1,4 @@
-import type { User, UserActivity, UserInviteResponse, UserSummary } from "../../types/user";
+import type { User, UserActivity, UserInviteResponse, UserSummary, InviteUserRequest } from "../../types/user";
 import { apiClient } from "./axios";
 
 interface ApiResponse<T> {
@@ -69,5 +69,13 @@ export async function resendInvite(id: number, token?: string) {
   return apiClient<ApiResponse<UserInviteResponse>>(`/api/users/${id}/resend-invite`, {
     method: "POST",
     token,
+  });
+}
+
+export async function inviteUser(data: InviteUserRequest, token?: string) {
+  return apiClient<ApiResponse<UserInviteResponse>>("/api/users/invite", {
+    method: "POST",
+    token,
+    data,
   });
 }

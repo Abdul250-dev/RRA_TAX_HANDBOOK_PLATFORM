@@ -27,6 +27,13 @@ export interface UserInviteResponse {
   status: UserStatus;
 }
 
+export interface InviteUserRequest {
+  fullName: string;
+  email: string;
+  roleName: string;
+  preferredLocale?: string;
+}
+
 export interface UserActivity {
   id: number;
   action: string;
