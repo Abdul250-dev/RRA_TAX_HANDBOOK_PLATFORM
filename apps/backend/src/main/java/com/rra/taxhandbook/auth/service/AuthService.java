@@ -54,11 +54,21 @@ public class AuthService {
 	}
 
 	public LoginResponse login(LoginRequest request) {
-		String username = request.username() == null || request.username().isBlank() ? "admin" : request.username();
-		String password = request.password() == null ? "" : request.password();
+		if (request.username() == null || request.username().isBlank()) {
+			throw new UnauthorizedException("Username is required.");
+		}
+		if (request.password() == null || request.password().isBlank()) {
+			throw new UnauthorizedException("Password is required.");
+		}
 
-		UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-		if (!passwordEncoder.matches(password, userDetails.getPassword())) {
+		UserDetails userDetails;
+		try {
+			userDetails = userDetailsService.loadUserByUsername(request.username());
+		} catch (org.springframework.security.core.userdetails.UsernameNotFoundException e) {
+			throw new UnauthorizedException("Invalid username or password.");
+		}
+
+		if (!passwordEncoder.matches(request.password(), userDetails.getPassword())) {
 			throw new UnauthorizedException("Invalid username or password.");
 		}
 
@@ -67,7 +77,7 @@ public class AuthService {
 			.map(grantedAuthority -> grantedAuthority.getAuthority().replace("ROLE_", ""))
 			.orElse("ADMIN");
 
-		return new LoginResponse(username, jwtService.generateToken(username, role), role);
+		return new LoginResponse(request.username(), jwtService.generateToken(request.username(), role), role);
 	}
 
 	public ApiResponse<PasswordResetResponse> forgotPassword(ForgotPasswordRequest request) {

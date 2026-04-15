@@ -32,13 +32,27 @@ public class CustomUserDetailsService implements UserDetailsService {
 
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		String normalizedUsername = username == null ? "" : username.trim().toLowerCase();
-		var localUser = userRepository.findByEmail(normalizedUsername)
-			.or(() -> userRepository.findByUserCode(username == null ? "" : username.trim()));
+		if (username == null || username.trim().isEmpty()) {
+			throw new UsernameNotFoundException("Username cannot be empty");
+		}
+
+		String normalizedUsername = username.trim().toLowerCase();
+		
+		// Try to find by email first
+		var localUser = userRepository.findByEmail(normalizedUsername);
+		
+		// If not found, try by userCode (case-sensitive)
+		if (localUser.isEmpty()) {
+			localUser = userRepository.findByUserCode(username.trim());
+		}
+		
 		if (localUser.isPresent()) {
 			var user = localUser.get();
-			if (!"ACTIVE".equalsIgnoreCase(user.getStatus()) || user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
+			if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
 				throw new UsernameNotFoundException("User is not active for login: " + username);
+			}
+			if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
+				throw new UsernameNotFoundException("User has no password set: " + username);
 			}
 			return new User(
 				user.getEmail(),
@@ -47,10 +61,11 @@ public class CustomUserDetailsService implements UserDetailsService {
 			);
 		}
 
-		if (!defaultUsername.equals(username)) {
-			throw new UsernameNotFoundException("User not found: " + username);
+		// Fallback to default admin user only if username matches exactly
+		if (defaultUsername.equals(username)) {
+			return new User(defaultUsername, passwordEncoder.encode(defaultPassword), List.of(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN")));
 		}
 
-		return new User(defaultUsername, passwordEncoder.encode(defaultPassword), List.of(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN")));
+		throw new UsernameNotFoundException("User not found: " + username);
 	}
 }
