@@ -193,12 +193,12 @@ export function AdminHeader() {
         >
           <label className="search-shell" aria-label="Search admin pages">
             <span className="search-icon" aria-hidden="true">
-              Q
+            
             </span>
             <input
               onChange={(event) => setQuery(event.target.value)}
               onFocus={() => setIsSearchOpen(true)}
-              placeholder="Search admin pages..."
+              placeholder=" Search ..."
               type="search"
               value={query}
             />
@@ -227,9 +227,7 @@ export function AdminHeader() {
           ) : null}
         </form>
 
-        <button className="icon-button" type="button" aria-label="Switch language">
-          EN
-        </button>
+      
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

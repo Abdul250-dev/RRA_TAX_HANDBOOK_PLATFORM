@@ -19,54 +19,14 @@ const fallbackUsers: User[] = [
     source: "LOCAL",
     status: "ACTIVE",
   },
-  {
-    id: 2,
-    userCode: "JHAB",
-    fullName: "Jean Claude Habimana",
-    email: "jean.habimana@rra.gov.rw",
-    roleName: "EDITOR",
-    preferredLocale: "EN",
-    source: "LOCAL",
-    status: "ACTIVE",
-  },
-  {
-    id: 3,
-    userCode: "DUWI",
-    fullName: "Diane Uwimana",
-    email: "diane.uwimana@rra.gov.rw",
-    roleName: "REVIEWER",
-    preferredLocale: "FR",
-    source: "LOCAL",
-    status: "INVITED",
-  },
-  {
-    id: 4,
-    userCode: "ENSH",
-    fullName: "Eric Nshimiyimana",
-    email: "eric.nshimiyimana@rra.gov.rw",
-    roleName: "AUDITOR",
-    preferredLocale: "EN",
-    source: "LOCAL",
-    status: "SUSPENDED",
-  },
-  {
-    id: 5,
-    userCode: "SKAY",
-    fullName: "Sandrine Kayitesi",
-    email: "sandrine.kayitesi@rra.gov.rw",
-    roleName: "SUPER_ADMIN",
-    preferredLocale: "RW",
-    source: "LOCAL",
-    status: "REMOVED",
-  },
 ];
 
 const fallbackSummary: UserSummary = {
-  totalUsers: fallbackUsers.length,
-  activeUsers: fallbackUsers.filter((user) => user.status === "ACTIVE").length,
-  invitedUsers: fallbackUsers.filter((user) => user.status === "INVITED").length,
-  suspendedUsers: fallbackUsers.filter((user) => user.status === "SUSPENDED").length,
-  removedUsers: fallbackUsers.filter((user) => user.status === "REMOVED").length,
+  totalUsers: 1,
+  activeUsers: 1,
+  invitedUsers: 0,
+  suspendedUsers: 0,
+  removedUsers: 0,
 };
 
 function formatStatus(status: UserStatus) {
@@ -134,7 +94,7 @@ function actionLabel(status: UserStatus) {
   return "Edit";
 }
 
-async function getUsersData() {
+async function getUsersData(status?: string, page: number = 0, pageSize: number = 10) {
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_TOKEN_COOKIE)?.value;
 
@@ -143,16 +103,44 @@ async function getUsersData() {
   }
 
   try {
-    const [users, summary] = await Promise.all([getUsers(token), getUserSummary(token)]);
+    const [users, summary] = await Promise.all([
+      getUsers(token, { status: status || undefined, page, pageSize }),
+      getUserSummary(token),
+    ]);
     return { summary, users };
   } catch {
     return { summary: fallbackSummary, users: fallbackUsers };
   }
 }
 
-export default async function UsersPage() {
-  const { summary, users } = await getUsersData();
-  const visibleUsers = users.slice(0, 10);
+interface UsersPageProps {
+  searchParams: Promise<{
+    status?: string;
+    page?: string;
+    pageSize?: string;
+  }>;
+}
+
+export default async function UsersPage({ searchParams }: UsersPageProps) {
+  const params = await searchParams;
+  const currentStatus = params.status || "All";
+  const currentPage = parseInt(params.page || "0", 10);
+  const pageSize = parseInt(params.pageSize || "10", 10);
+  const statusParam = params.status ? (params.status === "All" ? undefined : params.status) : undefined;
+
+  const { summary, users } = await getUsersData(statusParam, currentPage, pageSize);
+
+  // Calculate total pages based on the filtered results
+  // For accurate pagination, we'd need total count from backend, but using current data for now
+  const totalResults = users.length === pageSize ? (currentPage + 1) * pageSize + 1 : (currentPage * pageSize) + users.length;
+
+  const statusFilters = [
+    { label: "All", value: "All" },
+    { label: "Active", value: "ACTIVE" },
+    { label: "Invited", value: "INVITED" },
+    { label: "Suspended", value: "SUSPENDED" },
+    { label: "Removed", value: "REMOVED" },
+  ];
 
   return (
     <AdminLayout>
@@ -204,21 +192,15 @@ export default async function UsersPage() {
 
         <section className="panel-card users-table-panel">
           <div className="users-filter-strip" role="tablist" aria-label="User status filter">
-            <button className="users-filter-pill users-filter-pill-active" type="button">
-              All
-            </button>
-            <button className="users-filter-pill" type="button">
-              Active
-            </button>
-            <button className="users-filter-pill" type="button">
-              Invited
-            </button>
-            <button className="users-filter-pill" type="button">
-              Suspended
-            </button>
-            <button className="users-filter-pill" type="button">
-              Removed
-            </button>
+            {statusFilters.map((filter) => (
+              <a
+                key={filter.value}
+                href={filter.value === "All" ? "?page=0" : `?status=${filter.value}&page=0`}
+                className={`users-filter-pill ${currentStatus === filter.label ? "users-filter-pill-active" : ""}`}
+              >
+                {filter.label}
+              </a>
+            ))}
           </div>
 
           <DataTable
@@ -284,35 +266,41 @@ export default async function UsersPage() {
                 ),
               },
             ]}
-            rows={visibleUsers}
+            rows={users}
           />
 
           <div className="users-table-footer">
             <span>
-              Showing 1-{visibleUsers.length} of {users.length} results
+              Showing {users.length === 0 ? 0 : currentPage * pageSize + 1}-{currentPage * pageSize + users.length} of ~{totalResults} results
             </span>
 
             <div className="users-pagination">
               <span>Rows</span>
               <button className="users-page-size" type="button">
-                10
-                <span aria-hidden="true">⌄</span>
+                {pageSize}
+                <span aria-hidden="true"></span>
               </button>
-              <button className="users-page-button users-page-button-muted" type="button">
-                Previous
-              </button>
-              <button className="users-page-button users-page-button-active" type="button">
-                1
-              </button>
-              <button className="users-page-button" type="button">
-                2
-              </button>
-              <button className="users-page-button" type="button">
-                3
-              </button>
-              <button className="users-page-button" type="button">
-                Next
-              </button>
+              <a
+                href={currentPage > 0 ? `?status=${params.status || ""}${params.status ? "&" : "?"}page=${currentPage - 1}`.replace("?&", "?") : "#"}
+                className={`users-page-button users-page-nav-button ${currentPage === 0 ? "users-page-button-muted" : ""}`}
+              >
+                ← Previous
+              </a>
+              {Array.from({ length: Math.min(3, Math.ceil(totalResults / pageSize)) }).map((_, i) => (
+                <a
+                  key={i}
+                  href={`?status=${params.status || ""}${params.status ? "&" : "?"}page=${i}`.replace("?&", "?").replace("page=", statusParam ? "page=" : "page=")}
+                  className={`users-page-button ${currentPage === i ? "users-page-button-active" : ""}`}
+                >
+                  {i + 1}
+                </a>
+              ))}
+              <a
+                href={`?status=${params.status || ""}${params.status ? "&" : "?"}page=${currentPage + 1}`.replace("?&", "?")}
+                className="users-page-button users-page-nav-button"
+              >
+                Next →
+              </a>
             </div>
           </div>
         </section>

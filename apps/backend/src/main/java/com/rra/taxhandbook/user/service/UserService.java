@@ -55,15 +55,22 @@ public class UserService {
 	}
 
 	public List<UserResponse> getUsers() {
-		return getUsers(null, null);
+		return getUsers(null, null, 0, 10);
 	}
 
 	public List<UserResponse> getUsers(String status, String search) {
+		return getUsers(status, search, 0, Integer.MAX_VALUE);
+	}
+
+	public List<UserResponse> getUsers(String status, String search, int page, int pageSize) {
 		String normalizedStatus = normalizeFilter(status);
 		String normalizedSearch = normalizeFilter(search);
+		long offset = (long) page * pageSize;
 		return userRepository.findAllByOrderByCreatedAtDesc().stream()
 			.filter(user -> matchesStatus(user, normalizedStatus))
 			.filter(user -> matchesSearch(user, normalizedSearch))
+			.skip(offset)
+			.limit(pageSize)
 			.map(this::toResponse)
 			.toList();
 	}

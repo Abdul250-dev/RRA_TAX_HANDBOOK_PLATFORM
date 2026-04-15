@@ -6,7 +6,7 @@ interface ApiResponse<T> {
   data: T;
 }
 
-export async function getUsers(token?: string, params?: { status?: string; search?: string }) {
+export async function getUsers(token?: string, params?: { status?: string; search?: string; page?: number; pageSize?: number }) {
   const query = new URLSearchParams();
 
   if (params?.status) {
@@ -15,6 +15,14 @@ export async function getUsers(token?: string, params?: { status?: string; searc
 
   if (params?.search) {
     query.set("search", params.search);
+  }
+
+  if (params?.page !== undefined) {
+    query.set("page", params.page.toString());
+  }
+
+  if (params?.pageSize !== undefined) {
+    query.set("pageSize", params.pageSize.toString());
   }
 
   const suffix = query.toString() ? `?${query.toString()}` : "";
