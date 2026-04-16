@@ -79,3 +79,10 @@ export async function inviteUser(data: InviteUserRequest, token?: string) {
     data,
   });
 }
+
+export async function acceptInvite(inviteToken: string, password: string) {
+  return apiClient<ApiResponse<User>>("/api/users/accept-invite", {
+    method: "POST",
+    data: { token: inviteToken, password },
+  });
+}

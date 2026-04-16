@@ -9,6 +9,7 @@ export interface User {
   preferredLocale: string;
   source: string;
   status: UserStatus;
+  createdAt?: string;
 }
 
 export interface UserSummary {

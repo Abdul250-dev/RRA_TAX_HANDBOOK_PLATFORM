@@ -13,22 +13,27 @@ public class SmtpEmailDeliveryService implements EmailDeliveryService {
 	@Value("${app.mail.from:no-reply@rra-tax-handbook.local}")
 	private String fromEmail;
 
+	@Value("${app.frontend.base-url:http://localhost:3000}")
+	private String frontendBaseUrl;
+
 	public SmtpEmailDeliveryService(JavaMailSender mailSender) {
 		this.mailSender = mailSender;
 	}
 
 	@Override
 	public void sendInviteEmail(String recipientEmail, String fullName, String inviteToken, String expiresAt) {
+		String inviteLink = frontendBaseUrl + "/invitations/accept?token=" + inviteToken;
 		SimpleMailMessage message = new SimpleMailMessage();
 		message.setFrom(fromEmail);
 		message.setTo(recipientEmail);
-		message.setSubject("RRA Tax Handbook invitation");
+		message.setSubject("You're invited to RRA Tax Handbook");
 		message.setText(
 			"Hello " + fullName + ",\n\n" +
-			"You have been invited to access the RRA Tax Handbook platform.\n" +
-			"Invite token: " + inviteToken + "\n" +
-			"Expires at: " + expiresAt + "\n\n" +
-			"For development, you can use this token directly in the accept-invite API.\n"
+			"You have been invited to access the RRA Tax Handbook platform.\n\n" +
+			"Click the link below to set your password and activate your account:\n" +
+			inviteLink + "\n\n" +
+			"This link expires at: " + expiresAt + "\n\n" +
+			"If you did not expect this invitation, please ignore this email.\n"
 		);
 		mailSender.send(message);
 	}

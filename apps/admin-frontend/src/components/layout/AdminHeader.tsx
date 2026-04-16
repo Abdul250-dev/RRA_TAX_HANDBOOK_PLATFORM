@@ -96,17 +96,29 @@ export function AdminHeader() {
     [],
   );
 
+  // Pages where the search bar filters page data via URL ?search= param
+  const DATA_PAGES = [routes.users, routes.content, routes.roles, routes.auditLogs];
+  const isDataPage = DATA_PAGES.some((p) => pathname === p || pathname?.startsWith(p + "/"));
+
   const trimmedQuery = query.trim().toLowerCase();
   const searchResults = useMemo(() => {
-    if (!trimmedQuery) {
-      return searchItems.slice(0, 5);
-    }
-
+    if (isDataPage) return [];
+    if (!trimmedQuery) return searchItems.slice(0, 5);
     return searchItems.filter((item) => {
       const haystack = [item.label, item.description, ...item.keywords].join(" ").toLowerCase();
       return haystack.includes(trimmedQuery);
     });
-  }, [searchItems, trimmedQuery]);
+  }, [searchItems, trimmedQuery, isDataPage]);
+
+  // Sync search input with URL ?search= param when on a data page
+  useEffect(() => {
+    if (isDataPage) {
+      const params = new URLSearchParams(window.location.search);
+      setQuery(params.get("search") ?? "");
+    } else {
+      setQuery("");
+    }
+  }, [pathname, isDataPage]);
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
@@ -130,11 +142,21 @@ export function AdminHeader() {
   function handleSearchSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const firstResult = searchResults[0];
-    if (!firstResult) {
+    if (isDataPage) {
+      const params = new URLSearchParams(window.location.search);
+      if (query.trim()) {
+        params.set("search", query.trim());
+      } else {
+        params.delete("search");
+      }
+      params.delete("page");
+      router.push(`${pathname}?${params.toString()}`);
+      setIsSearchOpen(false);
       return;
     }
 
+    const firstResult = searchResults[0];
+    if (!firstResult) return;
     setIsSearchOpen(false);
     router.push(firstResult.href);
   }
@@ -196,15 +218,23 @@ export function AdminHeader() {
             
             </span>
             <input
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                if (isDataPage && event.target.value === "") {
+                  const params = new URLSearchParams(window.location.search);
+                  params.delete("search");
+                  params.delete("page");
+                  router.push(`${pathname}?${params.toString()}`);
+                }
+              }}
               onFocus={() => setIsSearchOpen(true)}
-              placeholder=" Search ..."
+              placeholder={isDataPage ? `Search on this page…` : " Search ..."}
               type="search"
               value={query}
             />
           </label>
 
-          {isSearchOpen ? (
+          {isSearchOpen && !isDataPage && (
             <div className="search-results" role="listbox" aria-label="Search results">
               {searchResults.length > 0 ? (
                 searchResults.map((item) => (
@@ -224,7 +254,7 @@ export function AdminHeader() {
                 </div>
               )}
             </div>
-          ) : null}
+          )}
         </form>
 
       

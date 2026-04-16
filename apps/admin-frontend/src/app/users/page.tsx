@@ -15,7 +15,7 @@ const fallbackSummary: UserSummary = {
   removedUsers: 0,
 };
 
-async function getUsersData(status?: string, page: number = 0, pageSize: number = 10) {
+async function getUsersData(status?: string, search?: string, page: number = 0, pageSize: number = 10) {
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_TOKEN_COOKIE)?.value;
 
@@ -25,7 +25,7 @@ async function getUsersData(status?: string, page: number = 0, pageSize: number 
 
   try {
     const [users, summary] = await Promise.all([
-      getUsers(token, { status: status || undefined, page, pageSize }),
+      getUsers(token, { status: status || undefined, search: search || undefined, page, pageSize }),
       getUserSummary(token),
     ]);
     return { summary, users, token };
@@ -37,6 +37,7 @@ async function getUsersData(status?: string, page: number = 0, pageSize: number 
 interface UsersPageProps {
   searchParams: Promise<{
     status?: string;
+    search?: string;
     page?: string;
     pageSize?: string;
   }>;
@@ -48,10 +49,11 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
   const currentPage = parseInt(params.page || "0", 10);
   const pageSize = parseInt(params.pageSize || "10", 10);
   const statusParam = params.status ? (params.status === "All" ? undefined : params.status) : undefined;
+  const searchQuery = params.search || undefined;
 
-  const { summary, users, token } = await getUsersData(statusParam, currentPage, pageSize);
+  const { summary, users, token } = await getUsersData(statusParam, searchQuery, currentPage, pageSize);
 
-  const totalResults = users.length === pageSize ? (currentPage + 1) * pageSize + 1 : (currentPage * pageSize) + users.length;
+  const hasNextPage = users.length === pageSize;
 
   return (
     <AdminLayout>
@@ -64,7 +66,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
           pageSize={pageSize}
           params={params}
           statusParam={statusParam}
-          totalResults={totalResults}
+          hasNextPage={hasNextPage}
           token={token}
         />
       </main>

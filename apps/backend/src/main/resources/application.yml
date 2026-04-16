@@ -43,6 +43,8 @@ security:
 app:
   mail:
     from: ${APP_MAIL_FROM:no-reply@rra-tax-handbook.local}
+  frontend:
+    base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
   cors:
     allowed-origins:
       - http://localhost:3000
