@@ -3,9 +3,9 @@ import { apiClient } from "./axios";
 export interface UserSummary {
   totalUsers: number;
   activeUsers: number;
-  invitedUsers: number;
+  pendingUsers: number;
   suspendedUsers: number;
-  removedUsers: number;
+  deactivatedUsers: number;
 }
 
 export interface ContentSummary {

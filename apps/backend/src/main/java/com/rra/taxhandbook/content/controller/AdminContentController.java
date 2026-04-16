@@ -23,6 +23,7 @@ import com.rra.taxhandbook.content.dto.AdminUpdateTopicBlockRequest;
 import com.rra.taxhandbook.content.dto.AdminUpdateTopicRequest;
 import com.rra.taxhandbook.content.dto.ContentSummaryResponse;
 import com.rra.taxhandbook.content.dto.SectionSummaryResponse;
+import com.rra.taxhandbook.content.dto.ScheduledPublishProcessingResponse;
 import com.rra.taxhandbook.content.dto.SectionWorkflowActionRequest;
 import com.rra.taxhandbook.content.dto.TopicBlockResponse;
 import com.rra.taxhandbook.content.dto.TopicDetailResponse;
@@ -45,19 +46,19 @@ public class AdminContentController {
 	}
 
 	@GetMapping("/sections")
-	@PreAuthorize("hasAnyRole('EDITOR','REVIEWER','PUBLISHER','ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasAnyRole('EDITOR','REVIEWER','PUBLISHER','ADMIN')")
 	public java.util.List<AdminSectionResponse> getSections(@RequestParam(defaultValue = "EN") LanguageCode locale) {
 		return contentStructureService.getAdminSections(locale);
 	}
 
 	@GetMapping("/summary")
-	@PreAuthorize("hasAnyRole('EDITOR','REVIEWER','PUBLISHER','ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasAnyRole('EDITOR','REVIEWER','PUBLISHER','ADMIN')")
 	public ContentSummaryResponse getSummary() {
 		return contentStructureService.getContentSummary();
 	}
 
 	@GetMapping("/topics")
-	@PreAuthorize("hasAnyRole('EDITOR','REVIEWER','PUBLISHER','ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasAnyRole('EDITOR','REVIEWER','PUBLISHER','ADMIN')")
 	public java.util.List<TopicSummaryResponse> getTopics(
 		@RequestParam(defaultValue = "EN") LanguageCode locale,
 		@RequestParam(required = false) ContentStatus status
@@ -66,84 +67,90 @@ public class AdminContentController {
 	}
 
 	@GetMapping("/topics/review-queue")
-	@PreAuthorize("hasAnyRole('REVIEWER','ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasAnyRole('REVIEWER','ADMIN')")
 	public java.util.List<TopicSummaryResponse> getReviewQueue(@RequestParam(defaultValue = "EN") LanguageCode locale) {
 		return contentStructureService.getAdminTopics(locale, ContentStatus.REVIEW);
 	}
 
 	@GetMapping("/topics/publish-queue")
-	@PreAuthorize("hasAnyRole('PUBLISHER','ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasAnyRole('PUBLISHER','ADMIN')")
 	public java.util.List<TopicSummaryResponse> getPublishQueue(@RequestParam(defaultValue = "EN") LanguageCode locale) {
 		return contentStructureService.getAdminTopics(locale, ContentStatus.APPROVED);
 	}
 
 	@GetMapping("/topics/{topicId}")
-	@PreAuthorize("hasAnyRole('EDITOR','REVIEWER','PUBLISHER','ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasAnyRole('EDITOR','REVIEWER','PUBLISHER','ADMIN')")
 	public TopicDetailResponse getTopic(@PathVariable Long topicId, @RequestParam(defaultValue = "EN") LanguageCode locale) {
 		return contentStructureService.getAdminTopic(topicId, locale);
 	}
 
 	@PostMapping("/sections")
-	@PreAuthorize("hasAnyRole('EDITOR','ADMIN','SUPER_ADMIN')")
-	public ApiResponse<SectionSummaryResponse> createSection(@RequestBody AdminCreateSectionRequest request) {
-		return contentStructureService.createSection(request);
+	@PreAuthorize("hasAnyRole('EDITOR','ADMIN')")
+	public ApiResponse<SectionSummaryResponse> createSection(@RequestBody AdminCreateSectionRequest request, Authentication authentication) {
+		return contentStructureService.createSection(request, authentication.getName());
 	}
 
 	@PutMapping("/sections/{sectionId}")
-	@PreAuthorize("hasAnyRole('EDITOR','ADMIN','SUPER_ADMIN')")
-	public ApiResponse<AdminSectionResponse> updateSection(@PathVariable Long sectionId, @RequestBody AdminUpdateSectionRequest request) {
-		return contentStructureService.updateSection(sectionId, request);
+	@PreAuthorize("hasAnyRole('EDITOR','ADMIN')")
+	public ApiResponse<AdminSectionResponse> updateSection(@PathVariable Long sectionId, @RequestBody AdminUpdateSectionRequest request, Authentication authentication) {
+		return contentStructureService.updateSection(sectionId, request, authentication.getName());
 	}
 
 	@PostMapping("/sections/{sectionId}/workflow")
-	@PreAuthorize("hasAnyRole('PUBLISHER','ADMIN','SUPER_ADMIN')")
-	public ApiResponse<AdminSectionResponse> transitionSection(@PathVariable Long sectionId, @RequestBody SectionWorkflowActionRequest request) {
-		return contentStructureService.transitionSection(sectionId, request);
+	@PreAuthorize("hasAnyRole('PUBLISHER','ADMIN')")
+	public ApiResponse<AdminSectionResponse> transitionSection(@PathVariable Long sectionId, @RequestBody SectionWorkflowActionRequest request, Authentication authentication) {
+		return contentStructureService.transitionSection(sectionId, request, authentication.getName());
 	}
 
 	@PostMapping("/topics")
-	@PreAuthorize("hasAnyRole('EDITOR','ADMIN','SUPER_ADMIN')")
-	public ApiResponse<TopicDetailResponse> createTopic(@RequestBody AdminCreateTopicRequest request) {
-		return contentStructureService.createTopic(request);
+	@PreAuthorize("hasAnyRole('EDITOR','ADMIN')")
+	public ApiResponse<TopicDetailResponse> createTopic(@RequestBody AdminCreateTopicRequest request, Authentication authentication) {
+		return contentStructureService.createTopic(request, authentication.getName());
 	}
 
 	@PutMapping("/topics/{topicId}")
-	@PreAuthorize("hasAnyRole('EDITOR','ADMIN','SUPER_ADMIN')")
-	public ApiResponse<TopicDetailResponse> updateTopic(@PathVariable Long topicId, @RequestBody AdminUpdateTopicRequest request) {
-		return contentStructureService.updateTopic(topicId, request);
+	@PreAuthorize("hasAnyRole('EDITOR','ADMIN')")
+	public ApiResponse<TopicDetailResponse> updateTopic(@PathVariable Long topicId, @RequestBody AdminUpdateTopicRequest request, Authentication authentication) {
+		return contentStructureService.updateTopic(topicId, request, authentication.getName());
 	}
 
 	@PostMapping("/topics/{topicId}/blocks")
-	@PreAuthorize("hasAnyRole('EDITOR','ADMIN','SUPER_ADMIN')")
-	public ApiResponse<TopicBlockResponse> createTopicBlock(@PathVariable Long topicId, @RequestBody AdminCreateTopicBlockRequest request) {
-		return contentStructureService.createTopicBlock(topicId, request);
+	@PreAuthorize("hasAnyRole('EDITOR','ADMIN')")
+	public ApiResponse<TopicBlockResponse> createTopicBlock(@PathVariable Long topicId, @RequestBody AdminCreateTopicBlockRequest request, Authentication authentication) {
+		return contentStructureService.createTopicBlock(topicId, request, authentication.getName());
 	}
 
 	@PutMapping("/blocks/{blockId}")
-	@PreAuthorize("hasAnyRole('EDITOR','ADMIN','SUPER_ADMIN')")
-	public ApiResponse<TopicBlockResponse> updateTopicBlock(@PathVariable Long blockId, @RequestBody AdminUpdateTopicBlockRequest request) {
-		return contentStructureService.updateTopicBlock(blockId, request);
+	@PreAuthorize("hasAnyRole('EDITOR','ADMIN')")
+	public ApiResponse<TopicBlockResponse> updateTopicBlock(@PathVariable Long blockId, @RequestBody AdminUpdateTopicBlockRequest request, Authentication authentication) {
+		return contentStructureService.updateTopicBlock(blockId, request, authentication.getName());
 	}
 
 	@org.springframework.web.bind.annotation.DeleteMapping("/topics/{topicId}")
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
-	public ApiResponse<String> deleteTopic(@PathVariable Long topicId) {
-		return contentStructureService.deleteTopic(topicId);
+	@PreAuthorize("hasRole('ADMIN')")
+	public ApiResponse<String> deleteTopic(@PathVariable Long topicId, Authentication authentication) {
+		return contentStructureService.deleteTopic(topicId, authentication.getName());
 	}
 
 	@org.springframework.web.bind.annotation.DeleteMapping("/blocks/{blockId}")
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
-	public ApiResponse<String> deleteTopicBlock(@PathVariable Long blockId) {
-		return contentStructureService.deleteTopicBlock(blockId);
+	@PreAuthorize("hasRole('ADMIN')")
+	public ApiResponse<String> deleteTopicBlock(@PathVariable Long blockId, Authentication authentication) {
+		return contentStructureService.deleteTopicBlock(blockId, authentication.getName());
 	}
 
 	@PostMapping("/topics/{topicId}/workflow")
-	@PreAuthorize("hasAnyRole('EDITOR','REVIEWER','PUBLISHER','ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasAnyRole('EDITOR','REVIEWER','PUBLISHER','ADMIN')")
 	public ApiResponse<TopicWorkflowResponse> transitionTopic(
 		@PathVariable Long topicId,
 		@RequestBody TopicWorkflowActionRequest request,
 		Authentication authentication
 	) {
 		return topicWorkflowService.transitionTopic(topicId, request, authentication);
+	}
+
+	@PostMapping("/topics/workflow/process-scheduled")
+	@PreAuthorize("hasAnyRole('PUBLISHER','ADMIN')")
+	public ApiResponse<ScheduledPublishProcessingResponse> processScheduledPublishes(Authentication authentication) {
+		return topicWorkflowService.processScheduledPublishes(authentication);
 	}
 }

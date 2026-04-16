@@ -4,7 +4,9 @@ import java.time.Instant;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.rra.taxhandbook.audit.service.AuditLogService;
 import com.rra.taxhandbook.common.dto.ApiResponse;
 import com.rra.taxhandbook.common.enums.ContentStatus;
 import com.rra.taxhandbook.common.enums.LanguageCode;
@@ -44,6 +46,7 @@ public class ContentStructureService {
 	private final TopicTranslationRepository topicTranslationRepository;
 	private final TopicBlockRepository topicBlockRepository;
 	private final TopicBlockTranslationRepository topicBlockTranslationRepository;
+	private final AuditLogService auditLogService;
 
 	public ContentStructureService(
 		SectionRepository sectionRepository,
@@ -51,7 +54,8 @@ public class ContentStructureService {
 		TopicRepository topicRepository,
 		TopicTranslationRepository topicTranslationRepository,
 		TopicBlockRepository topicBlockRepository,
-		TopicBlockTranslationRepository topicBlockTranslationRepository
+		TopicBlockTranslationRepository topicBlockTranslationRepository,
+		AuditLogService auditLogService
 	) {
 		this.sectionRepository = sectionRepository;
 		this.sectionTranslationRepository = sectionTranslationRepository;
@@ -59,6 +63,7 @@ public class ContentStructureService {
 		this.topicTranslationRepository = topicTranslationRepository;
 		this.topicBlockRepository = topicBlockRepository;
 		this.topicBlockTranslationRepository = topicBlockTranslationRepository;
+		this.auditLogService = auditLogService;
 	}
 
 	public List<SectionSummaryResponse> getSections(LanguageCode locale) {
@@ -115,7 +120,8 @@ public class ContentStructureService {
 				translation.getSummary(),
 				translation.getTopic().getTopicType().name(),
 				translation.getTopic().getStatus().name(),
-				translation.getTopic().getSortOrder()
+				translation.getTopic().getSortOrder(),
+				translation.getTopic().getScheduledPublishAt()
 			))
 			.toList();
 	}
@@ -150,6 +156,7 @@ public class ContentStructureService {
 			topicTranslation.getIntroText(),
 			topicTranslation.getTopic().getTopicType().name(),
 			topicTranslation.getTopic().getStatus().name(),
+			topicTranslation.getTopic().getScheduledPublishAt(),
 			blocks
 		);
 	}
@@ -182,17 +189,19 @@ public class ContentStructureService {
 			topicTranslation.getIntroText(),
 			topic.getTopicType().name(),
 			topic.getStatus().name(),
+			topic.getScheduledPublishAt(),
 			blocks
 		);
 	}
 
-	public ApiResponse<SectionSummaryResponse> createSection(AdminCreateSectionRequest request) {
+	public ApiResponse<SectionSummaryResponse> createSection(AdminCreateSectionRequest request, String actor) {
 		validateSectionSlug(request.slug(), request.locale(), null);
 		Section parent = request.parentId() == null ? null : sectionRepository.findById(request.parentId())
 			.orElseThrow(() -> new ResourceNotFoundException("Parent section not found: " + request.parentId()));
 		Instant now = Instant.now();
 		Section section = sectionRepository.save(new Section(parent, request.type(), request.sortOrder(), ContentStatus.DRAFT, null, false, now, now));
 		SectionTranslation translation = sectionTranslationRepository.save(new SectionTranslation(section, request.locale(), request.name(), request.slug(), request.summary()));
+		auditLogService.log("CONTENT_SECTION_CREATED", actor, translation.getSlug(), "Section created");
 
 		return new ApiResponse<>("Section created", new SectionSummaryResponse(
 			section.getId(),
@@ -205,15 +214,16 @@ public class ContentStructureService {
 		));
 	}
 
-	public ApiResponse<TopicDetailResponse> createTopic(AdminCreateTopicRequest request) {
+	public ApiResponse<TopicDetailResponse> createTopic(AdminCreateTopicRequest request, String actor) {
 		validateTopicSlug(request.slug(), request.locale(), null);
 		Section section = sectionRepository.findById(request.sectionId())
 			.orElseThrow(() -> new ResourceNotFoundException("Section not found: " + request.sectionId()));
 		Instant now = Instant.now();
-		Topic topic = topicRepository.save(new Topic(section, request.topicType(), ContentStatus.DRAFT, request.sortOrder(), false, true, null, now, now));
+		Topic topic = topicRepository.save(new Topic(section, request.topicType(), ContentStatus.DRAFT, request.sortOrder(), false, true, null, null, now, now));
 		TopicTranslation translation = topicTranslationRepository.save(
 			new TopicTranslation(topic, request.locale(), request.title(), request.slug(), request.summary(), request.introText())
 		);
+		auditLogService.log("CONTENT_TOPIC_CREATED", actor, translation.getSlug(), "Topic created");
 
 		return new ApiResponse<>("Topic created", new TopicDetailResponse(
 			topic.getId(),
@@ -224,11 +234,12 @@ public class ContentStructureService {
 			translation.getIntroText(),
 			topic.getTopicType().name(),
 			topic.getStatus().name(),
+			topic.getScheduledPublishAt(),
 			List.of()
 		));
 	}
 
-	public ApiResponse<TopicBlockResponse> createTopicBlock(Long topicId, AdminCreateTopicBlockRequest request) {
+	public ApiResponse<TopicBlockResponse> createTopicBlock(Long topicId, AdminCreateTopicBlockRequest request, String actor) {
 		Topic topic = topicRepository.findById(topicId)
 			.orElseThrow(() -> new ResourceNotFoundException("Topic not found: " + topicId));
 		Instant now = Instant.now();
@@ -238,6 +249,7 @@ public class ContentStructureService {
 		TopicBlockTranslation translation = topicBlockTranslationRepository.save(
 			new TopicBlockTranslation(topicBlock, request.locale(), request.title(), request.body())
 		);
+		auditLogService.log("CONTENT_BLOCK_CREATED", actor, String.valueOf(topicBlock.getId()), "Topic block created");
 
 		return new ApiResponse<>("Topic block created", new TopicBlockResponse(
 			topicBlock.getId(),
@@ -249,19 +261,20 @@ public class ContentStructureService {
 		));
 	}
 
-	public ApiResponse<AdminSectionResponse> updateSection(Long sectionId, AdminUpdateSectionRequest request) {
+	public ApiResponse<AdminSectionResponse> updateSection(Long sectionId, AdminUpdateSectionRequest request, String actor) {
 		Section section = sectionRepository.findById(sectionId)
 			.orElseThrow(() -> new ResourceNotFoundException("Section not found: " + sectionId));
 		validateSectionSlug(request.slug(), request.locale(), sectionId);
 		Section parent = request.parentId() == null ? null : sectionRepository.findById(request.parentId())
 			.orElseThrow(() -> new ResourceNotFoundException("Parent section not found: " + request.parentId()));
 		SectionTranslation translation = sectionTranslationRepository.findBySection_IdAndLocale(sectionId, request.locale())
-			.orElseThrow(() -> new ResourceNotFoundException("Section translation not found for locale: " + request.locale().name()));
+			.orElseGet(() -> new SectionTranslation(section, request.locale(), request.name(), request.slug(), request.summary()));
 		section.updateStructure(parent, request.type(), request.sortOrder());
 		section.touch(Instant.now());
 		translation.update(request.name(), request.slug(), request.summary());
 		sectionRepository.save(section);
 		sectionTranslationRepository.save(translation);
+		auditLogService.log("CONTENT_SECTION_UPDATED", actor, translation.getSlug(), "Section updated");
 		return new ApiResponse<>("Section updated", new AdminSectionResponse(
 			section.getId(),
 			parent == null ? null : parent.getId(),
@@ -274,32 +287,34 @@ public class ContentStructureService {
 		));
 	}
 
-	public ApiResponse<TopicDetailResponse> updateTopic(Long topicId, AdminUpdateTopicRequest request) {
+	public ApiResponse<TopicDetailResponse> updateTopic(Long topicId, AdminUpdateTopicRequest request, String actor) {
 		Topic topic = topicRepository.findById(topicId)
 			.orElseThrow(() -> new ResourceNotFoundException("Topic not found: " + topicId));
 		validateTopicSlug(request.slug(), request.locale(), topicId);
 		Section section = sectionRepository.findById(request.sectionId())
 			.orElseThrow(() -> new ResourceNotFoundException("Section not found: " + request.sectionId()));
 		TopicTranslation translation = topicTranslationRepository.findByTopic_IdAndLocale(topicId, request.locale())
-			.orElseThrow(() -> new ResourceNotFoundException("Topic translation not found for locale: " + request.locale().name()));
+			.orElseGet(() -> new TopicTranslation(topic, request.locale(), request.title(), request.slug(), request.summary(), request.introText()));
 		topic.updateStructure(section, request.topicType(), request.sortOrder());
 		topic.touch(Instant.now());
 		translation.update(request.title(), request.slug(), request.summary(), request.introText());
 		topicRepository.save(topic);
 		topicTranslationRepository.save(translation);
+		auditLogService.log("CONTENT_TOPIC_UPDATED", actor, translation.getSlug(), "Topic updated");
 		return new ApiResponse<>("Topic updated", getAdminTopic(topicId, request.locale()));
 	}
 
-	public ApiResponse<TopicBlockResponse> updateTopicBlock(Long blockId, AdminUpdateTopicBlockRequest request) {
+	public ApiResponse<TopicBlockResponse> updateTopicBlock(Long blockId, AdminUpdateTopicBlockRequest request, String actor) {
 		TopicBlock topicBlock = topicBlockRepository.findById(blockId)
 			.orElseThrow(() -> new ResourceNotFoundException("Topic block not found: " + blockId));
 		TopicBlockTranslation translation = topicBlockTranslationRepository.findByTopicBlock_IdAndLocale(blockId, request.locale())
-			.orElseThrow(() -> new ResourceNotFoundException("Topic block translation not found for locale: " + request.locale().name()));
+			.orElseGet(() -> new TopicBlockTranslation(topicBlock, request.locale(), request.title(), request.body()));
 		topicBlock.updateStructure(request.blockType(), request.sortOrder(), request.anchorKey());
 		topicBlock.touch(Instant.now());
 		translation.update(request.title(), request.body());
 		topicBlockRepository.save(topicBlock);
 		topicBlockTranslationRepository.save(translation);
+		auditLogService.log("CONTENT_BLOCK_UPDATED", actor, String.valueOf(topicBlock.getId()), "Topic block updated");
 		return new ApiResponse<>("Topic block updated", new TopicBlockResponse(
 			topicBlock.getId(),
 			translation.getTitle(),
@@ -310,7 +325,8 @@ public class ContentStructureService {
 		));
 	}
 
-	public ApiResponse<String> deleteTopic(Long topicId) {
+	@Transactional
+	public ApiResponse<String> deleteTopic(Long topicId, String actor) {
 		Topic topic = topicRepository.findById(topicId)
 			.orElseThrow(() -> new ResourceNotFoundException("Topic not found: " + topicId));
 		if (!(topic.getStatus() == ContentStatus.DRAFT || topic.getStatus() == ContentStatus.ARCHIVED)) {
@@ -320,10 +336,12 @@ public class ContentStructureService {
 		topicBlockRepository.deleteByTopic_Id(topicId);
 		topicTranslationRepository.deleteByTopic_Id(topicId);
 		topicRepository.delete(topic);
+		auditLogService.log("CONTENT_TOPIC_DELETED", actor, String.valueOf(topicId), "Topic deleted");
 		return new ApiResponse<>("Topic deleted", topicId.toString());
 	}
 
-	public ApiResponse<String> deleteTopicBlock(Long blockId) {
+	@Transactional
+	public ApiResponse<String> deleteTopicBlock(Long blockId, String actor) {
 		TopicBlock topicBlock = topicBlockRepository.findById(blockId)
 			.orElseThrow(() -> new ResourceNotFoundException("Topic block not found: " + blockId));
 		if (!(topicBlock.getStatus() == ContentStatus.DRAFT || topicBlock.getStatus() == ContentStatus.ARCHIVED)) {
@@ -331,16 +349,27 @@ public class ContentStructureService {
 		}
 		topicBlockTranslationRepository.deleteByTopicBlock_Id(blockId);
 		topicBlockRepository.delete(topicBlock);
+		auditLogService.log("CONTENT_BLOCK_DELETED", actor, String.valueOf(blockId), "Topic block deleted");
 		return new ApiResponse<>("Topic block deleted", blockId.toString());
 	}
 
-	public ApiResponse<AdminSectionResponse> transitionSection(Long sectionId, SectionWorkflowActionRequest request) {
+	public ApiResponse<AdminSectionResponse> transitionSection(Long sectionId, SectionWorkflowActionRequest request, String actor) {
 		Section section = sectionRepository.findById(sectionId)
 			.orElseThrow(() -> new ResourceNotFoundException("Section not found: " + sectionId));
 		String action = request.action() == null ? "" : request.action().trim().toUpperCase();
 		switch (action) {
-			case "PUBLISH" -> section.changeStatus(ContentStatus.PUBLISHED);
-			case "ARCHIVE" -> section.changeStatus(ContentStatus.ARCHIVED);
+			case "PUBLISH" -> {
+				if (topicRepository.countBySection_IdAndStatus(sectionId, ContentStatus.PUBLISHED) == 0) {
+					throw new IllegalArgumentException("Section must contain at least one published topic before it can be published.");
+				}
+				section.changeStatus(ContentStatus.PUBLISHED);
+			}
+			case "ARCHIVE" -> {
+				if (topicRepository.countBySection_IdAndStatus(sectionId, ContentStatus.PUBLISHED) > 0) {
+					throw new IllegalArgumentException("Section cannot be archived while it still contains published topics.");
+				}
+				section.changeStatus(ContentStatus.ARCHIVED);
+			}
 			default -> throw new IllegalArgumentException("Unsupported section workflow action: " + request.action());
 		}
 		section.touch(Instant.now());
@@ -349,6 +378,7 @@ public class ContentStructureService {
 			.orElseGet(() -> sectionTranslationRepository.findBySection_IdAndLocale(savedSection.getId(), LanguageCode.FR)
 				.orElseGet(() -> sectionTranslationRepository.findBySection_IdAndLocale(savedSection.getId(), LanguageCode.KIN)
 					.orElseThrow(() -> new ResourceNotFoundException("Section translation not found: " + sectionId))));
+		auditLogService.log("CONTENT_SECTION_WORKFLOW_UPDATED", actor, translation.getSlug(), "Section workflow action: " + action);
 		return new ApiResponse<>("Section workflow updated", new AdminSectionResponse(
 			savedSection.getId(),
 			savedSection.getParent() == null ? null : savedSection.getParent().getId(),

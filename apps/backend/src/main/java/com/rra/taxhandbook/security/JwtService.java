@@ -3,12 +3,13 @@ package com.rra.taxhandbook.security;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+
+import jakarta.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -19,11 +20,18 @@ public class JwtService {
 	private static final Base64.Encoder URL_ENCODER = Base64.getUrlEncoder().withoutPadding();
 	private static final Base64.Decoder URL_DECODER = Base64.getUrlDecoder();
 
-	@Value("${security.jwt.secret:change-this-jwt-secret-for-production}")
+	@Value("${security.jwt.secret:}")
 	private String jwtSecret;
 
 	@Value("${security.jwt.expiration-seconds:3600}")
 	private long expirationSeconds;
+
+	@PostConstruct
+	void validateConfiguration() {
+		if (jwtSecret == null || jwtSecret.isBlank()) {
+			throw new IllegalStateException("security.jwt.secret must be configured.");
+		}
+	}
 
 	public String generateToken(String subject, String role) {
 		try {

@@ -6,6 +6,7 @@ import java.util.Locale;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Service;
 
+import com.rra.taxhandbook.audit.service.AuditLogService;
 import com.rra.taxhandbook.common.dto.ApiResponse;
 import com.rra.taxhandbook.common.exception.ResourceNotFoundException;
 import com.rra.taxhandbook.common.enums.UserRole;
@@ -20,10 +21,12 @@ public class RoleService {
 
 	private final RoleRepository roleRepository;
 	private final UserRepository userRepository;
+	private final AuditLogService auditLogService;
 
-	public RoleService(RoleRepository roleRepository, UserRepository userRepository) {
+	public RoleService(RoleRepository roleRepository, UserRepository userRepository, AuditLogService auditLogService) {
 		this.roleRepository = roleRepository;
 		this.userRepository = userRepository;
+		this.auditLogService = auditLogService;
 	}
 
 	public List<RoleResponse> getRoles() {
@@ -43,17 +46,18 @@ public class RoleService {
 			.orElseThrow(() -> new ResourceNotFoundException("Role not found: " + name));
 	}
 
-	public ApiResponse<RoleResponse> createRole(RoleRequest request) {
+	public ApiResponse<RoleResponse> createRole(RoleRequest request, String actor) {
 		validateRoleRequest(request);
 		String normalizedName = normalizeName(request.name());
 		roleRepository.findByName(normalizedName).ifPresent(existing -> {
 			throw new IllegalArgumentException("Role already exists: " + normalizedName);
 		});
 		Role savedRole = roleRepository.save(new Role(normalizedName, request.description().trim()));
+		auditLogService.log("ROLE_CREATED", actor, savedRole.getName(), "Role created with description: " + savedRole.getDescription());
 		return new ApiResponse<>("Role created successfully", toResponse(savedRole));
 	}
 
-	public ApiResponse<RoleResponse> updateRole(Long id, RoleRequest request) {
+	public ApiResponse<RoleResponse> updateRole(Long id, RoleRequest request, String actor) {
 		validateRoleRequest(request);
 		Role role = roleRepository.findById(id)
 			.orElseThrow(() -> new ResourceNotFoundException("Role not found: " + id));
@@ -69,10 +73,12 @@ public class RoleService {
 		});
 
 		role.update(normalizedName, request.description().trim());
-		return new ApiResponse<>("Role updated successfully", toResponse(roleRepository.save(role)));
+		Role savedRole = roleRepository.save(role);
+		auditLogService.log("ROLE_UPDATED", actor, savedRole.getName(), "Role updated");
+		return new ApiResponse<>("Role updated successfully", toResponse(savedRole));
 	}
 
-	public ApiResponse<String> deleteRole(Long id) {
+	public ApiResponse<String> deleteRole(Long id, String actor) {
 		Role role = roleRepository.findById(id)
 			.orElseThrow(() -> new ResourceNotFoundException("Role not found: " + id));
 		if (isSystemRole(role.getName())) {
@@ -82,18 +88,19 @@ public class RoleService {
 			throw new IllegalArgumentException("Role cannot be deleted while it is assigned to users.");
 		}
 		roleRepository.delete(role);
+		auditLogService.log("ROLE_DELETED", actor, role.getName(), "Role deleted");
 		return new ApiResponse<>("Role deleted successfully", role.getName());
 	}
 
 	@org.springframework.context.annotation.Bean
+	@org.springframework.core.annotation.Order(0)
 	ApplicationRunner seedRoles() {
 		return args -> {
 			seedRole(UserRole.PUBLIC.name(), "Anonymous public access for reading published handbook content. This role is documented for access control but should not be assigned to authenticated users.");
 			seedRole(UserRole.EDITOR.name(), "Content creation and draft editing rights for articles, documents, and FAQs.");
 			seedRole(UserRole.REVIEWER.name(), "Quality control role for reviewing submissions, requesting changes, and approving content.");
 			seedRole(UserRole.PUBLISHER.name(), "Final publishing authority for making approved content visible, scheduling releases, and archiving content.");
-			seedRole(UserRole.ADMIN.name(), "Operational administration role for user management, role assignment, taxonomy management, and workflow overrides.");
-			seedRole(UserRole.SUPER_ADMIN.name(), "Highest-trust role with full system configuration, security, and audit visibility privileges.");
+			seedRole(UserRole.ADMIN.name(), "Highest privileged operational role for user management, role assignment, taxonomy management, workflow overrides, configuration, and audit oversight.");
 			seedRole(UserRole.AUDITOR.name(), "Read-only oversight role for compliance reviews, audit logs, and change monitoring.");
 		};
 	}
