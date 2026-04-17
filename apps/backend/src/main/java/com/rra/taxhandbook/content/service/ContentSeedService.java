@@ -73,7 +73,7 @@ public class ContentSeedService {
 			seedSectionTranslation(central, LanguageCode.FR, "Impots du gouvernement central", "gouvernement-central", "Impots collectes par la RRA pour le compte du gouvernement central.");
 			seedSectionTranslation(central, LanguageCode.KIN, "Imisoro ya Leta Nkuru", "leta-nkuru", "Imisoro ikusanywa na RRA mu izina rya Leta Nkuru.");
 
-			Topic vat = topicRepository.save(new Topic(central, TopicType.TAX_TOPIC, ContentStatus.PUBLISHED, 1, true, true, now, now, now));
+			Topic vat = topicRepository.save(new Topic(central, TopicType.TAX_TOPIC, ContentStatus.PUBLISHED, 1, true, true, now, null, now, now));
 			seedTopicTranslation(vat, LanguageCode.EN, "Value Added Tax (VAT)", "value-added-tax-vat", "VAT is a tax on the consumption of goods and services.", "VAT is applied on a wide range of products and services. This page brings together registration, obligations, declaration, payment, and penalties.");
 			seedTopicTranslation(vat, LanguageCode.FR, "Taxe sur la valeur ajoutee (TVA)", "taxe-sur-la-valeur-ajoutee", "La TVA est un impot sur la consommation des biens et services.", "Cette page rassemble l'inscription, les obligations, la declaration, le paiement et les penalites.");
 			seedTopicTranslation(vat, LanguageCode.KIN, "Umusoro ku nyongeragaciro (VAT)", "umusoro-ku-nyongeragaciro", "VAT ni umusoro ucibwa ku ikoreshwa ry'ibicuruzwa na serivisi.", "Uru rupapuro ruhuriza hamwe kwiyandikisha, inshingano, gutanga imenyekanisha, kwishyura n'ibihano.");

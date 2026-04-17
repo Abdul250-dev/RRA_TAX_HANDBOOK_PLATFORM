@@ -1,30 +1,41 @@
-export type UserStatus = "ACTIVE" | "INVITED" | "SUSPENDED" | "REMOVED";
+export type UserStatus = "ACTIVE" | "PENDING" | "SUSPENDED" | "DEACTIVATED";
 
 export interface User {
   id: number;
+  employeeId: string;
   userCode: string;
+  username: string | null;
+  firstName: string;
+  lastName: string;
   fullName: string;
   email: string;
+  phoneNumber?: string | null;
+  department?: string | null;
+  position?: string | null;
   roleName: string;
   preferredLocale: string;
   source: string;
   status: UserStatus;
   createdAt?: string;
+  isActive?: boolean;
+  isLocked?: boolean;
+  failedLoginAttempts?: number;
+  lastLoginAt?: string | null;
 }
 
 export interface UserSummary {
   totalUsers: number;
   activeUsers: number;
-  invitedUsers: number;
+  pendingUsers: number;
   suspendedUsers: number;
-  removedUsers: number;
+  deactivatedUsers: number;
 }
 
 export interface UserInviteResponse {
-  id: number;
+  userId: number;
   email: string;
-  inviteToken: string;
-  expiresAt: string;
+  inviteToken?: string | null;
+  expiresAt?: string | null;
   status: UserStatus;
 }
 

@@ -5,6 +5,7 @@ public record InvitePreviewResponse(
 	boolean expired,
 	String email,
 	String fullName,
+	String username,
 	String roleName,
 	String preferredLocale,
 	String expiresAt,

@@ -6,6 +6,5 @@ public enum UserRole {
 	REVIEWER,
 	PUBLISHER,
 	ADMIN,
-	SUPER_ADMIN,
 	AUDITOR
 }

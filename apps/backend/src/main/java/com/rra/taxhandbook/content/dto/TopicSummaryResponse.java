@@ -1,5 +1,7 @@
 package com.rra.taxhandbook.content.dto;
 
+import java.time.Instant;
+
 public record TopicSummaryResponse(
 	Long id,
 	Long sectionId,
@@ -8,6 +10,7 @@ public record TopicSummaryResponse(
 	String summary,
 	String topicType,
 	String status,
-	Integer sortOrder
+	Integer sortOrder,
+	Instant scheduledPublishAt
 ) {
 }

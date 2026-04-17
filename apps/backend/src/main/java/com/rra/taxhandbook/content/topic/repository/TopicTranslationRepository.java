@@ -1,5 +1,6 @@
 package com.rra.taxhandbook.content.topic.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,6 +17,7 @@ public interface TopicTranslationRepository extends JpaRepository<TopicTranslati
 	Optional<TopicTranslation> findBySlugAndLocaleAndTopic_Status(String slug, LanguageCode locale, com.rra.taxhandbook.common.enums.ContentStatus status);
 	Optional<TopicTranslation> findFirstByTopic_IdOrderByIdAsc(Long topicId);
 	Optional<TopicTranslation> findByTopic_IdAndLocale(Long topicId, LanguageCode locale);
+	long countByTopic_IdAndLocaleIn(Long topicId, Collection<LanguageCode> locales);
 	boolean existsBySlugAndLocale(String slug, LanguageCode locale);
 	boolean existsBySlugAndLocaleAndTopic_IdNot(String slug, LanguageCode locale, Long topicId);
 	void deleteByTopic_Id(Long topicId);

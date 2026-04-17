@@ -16,11 +16,14 @@ import com.rra.taxhandbook.user.repository.UserRepository;
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
-	@Value("${spring.security.user.name:admin}")
-	private String defaultUsername;
+	@Value("${app.security.bootstrap-admin.enabled:false}")
+	private boolean bootstrapAdminEnabled;
 
-	@Value("${spring.security.user.password:Admin@123}")
-	private String defaultPassword;
+	@Value("${app.security.bootstrap-admin.username:}")
+	private String bootstrapAdminUsername;
+
+	@Value("${app.security.bootstrap-admin.password:}")
+	private String bootstrapAdminPassword;
 
 	private final PasswordEncoder passwordEncoder;
 	private final UserRepository userRepository;
@@ -32,40 +35,35 @@ public class CustomUserDetailsService implements UserDetailsService {
 
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		if (username == null || username.trim().isEmpty()) {
-			throw new UsernameNotFoundException("Username cannot be empty");
-		}
-
-		String normalizedUsername = username.trim().toLowerCase();
-		
-		// Try to find by email first
-		var localUser = userRepository.findByEmail(normalizedUsername);
-		
-		// If not found, try by userCode (case-sensitive)
-		if (localUser.isEmpty()) {
-			localUser = userRepository.findByUserCode(username.trim());
-		}
-		
+		String normalizedUsername = username == null ? "" : username.trim().toLowerCase();
+		var localUser = userRepository.findByUsername(normalizedUsername);
 		if (localUser.isPresent()) {
 			var user = localUser.get();
-			if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
+			if (!"ACTIVE".equalsIgnoreCase(user.getStatus())
+				|| !user.isActive()
+				|| user.isLocked()
+				|| user.getPasswordHash() == null
+				|| user.getPasswordHash().isBlank()) {
 				throw new UsernameNotFoundException("User is not active for login: " + username);
 			}
 			if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
 				throw new UsernameNotFoundException("User has no password set: " + username);
 			}
 			return new User(
-				user.getEmail(),
+				user.getUsername(),
 				user.getPasswordHash(),
 				List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().getName()))
 			);
 		}
 
-		// Fallback to default admin user only if username matches exactly
-		if (defaultUsername.equals(username)) {
-			return new User(defaultUsername, passwordEncoder.encode(defaultPassword), List.of(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN")));
+		if (!bootstrapAdminEnabled || bootstrapAdminUsername == null || bootstrapAdminUsername.isBlank()) {
+			throw new UsernameNotFoundException("User not found: " + username);
 		}
 
-		throw new UsernameNotFoundException("User not found: " + username);
+		if (!bootstrapAdminUsername.equals(username) || bootstrapAdminPassword == null || bootstrapAdminPassword.isBlank()) {
+			throw new UsernameNotFoundException("User not found: " + username);
+		}
+
+		return new User(bootstrapAdminUsername, passwordEncoder.encode(bootstrapAdminPassword), List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
 	}
 }

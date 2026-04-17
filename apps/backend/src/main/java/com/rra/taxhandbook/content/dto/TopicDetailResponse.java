@@ -1,5 +1,6 @@
 package com.rra.taxhandbook.content.dto;
 
+import java.time.Instant;
 import java.util.List;
 
 public record TopicDetailResponse(
@@ -11,6 +12,7 @@ public record TopicDetailResponse(
 	String introText,
 	String topicType,
 	String status,
+	Instant scheduledPublishAt,
 	List<TopicBlockResponse> blocks
 ) {
 }

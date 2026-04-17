@@ -1,5 +1,6 @@
 package com.rra.taxhandbook.content.section.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,6 +14,7 @@ public interface SectionTranslationRepository extends JpaRepository<SectionTrans
 	List<SectionTranslation> findByLocaleAndSection_StatusOrderBySection_SortOrderAsc(LanguageCode locale, com.rra.taxhandbook.common.enums.ContentStatus status);
 	Optional<SectionTranslation> findBySlugAndLocale(String slug, LanguageCode locale);
 	Optional<SectionTranslation> findBySection_IdAndLocale(Long sectionId, LanguageCode locale);
+	long countBySection_IdAndLocaleIn(Long sectionId, Collection<LanguageCode> locales);
 	boolean existsBySlugAndLocale(String slug, LanguageCode locale);
 	boolean existsBySlugAndLocaleAndSection_IdNot(String slug, LanguageCode locale, Long sectionId);
 }

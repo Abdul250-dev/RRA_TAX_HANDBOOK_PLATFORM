@@ -11,6 +11,30 @@ spring:
     defer-datasource-initialization: true
   sql:
     init:
-      mode: always
+      mode: never
+  flyway:
+    enabled: false
 server:
   port: 0
+security:
+  jwt:
+    secret: test-jwt-secret-for-integration-tests
+app:
+  content:
+    required-publish-locales: EN
+  mail:
+    from: test-no-reply@rra.test
+    invite-accept-url: http://localhost:3000/accept-invite?token={token}
+    reset-password-url: http://localhost:3000/reset-password?token={token}
+    delivery:
+      max-attempts: 2
+      retry-delay-ms: 0
+    queue:
+      max-attempts: 3
+      retry-delay-seconds: 0
+      processing:
+        enabled: false
+        fixed-delay-ms: 60000
+  security:
+    rate-limit:
+      enabled: false

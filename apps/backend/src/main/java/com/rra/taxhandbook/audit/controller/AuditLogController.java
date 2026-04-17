@@ -21,7 +21,7 @@ public class AuditLogController {
 	}
 
 	@GetMapping
-	@PreAuthorize("hasAnyRole('AUDITOR','SUPER_ADMIN')")
+	@PreAuthorize("hasAnyRole('AUDITOR','ADMIN')")
 	public List<AuditLog> getAuditLogs() {
 		return auditLogService.getAuditLogs();
 	}

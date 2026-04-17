@@ -66,7 +66,7 @@ export async function restoreUser(id: number, token?: string) {
 }
 
 export async function resendInvite(id: number, token?: string) {
-  return apiClient<ApiResponse<UserInviteResponse>>(`/api/users/${id}/resend-invite`, {
+  return apiClient<ApiResponse<UserInviteResponse>>(`/api/users/${id}/resend`, {
     method: "POST",
     token,
   });

@@ -1,5 +1,6 @@
 package com.rra.taxhandbook.article.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,6 +22,7 @@ public class AdminArticleController {
 	}
 
 	@PostMapping
+	@PreAuthorize("hasAnyRole('EDITOR','ADMIN')")
 	public ApiResponse<ArticleResponse> createArticle(@RequestBody ArticleRequest request) {
 		return articleService.createArticle(request);
 	}

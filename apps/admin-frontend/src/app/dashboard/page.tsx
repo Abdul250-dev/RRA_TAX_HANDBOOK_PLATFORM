@@ -20,9 +20,9 @@ import { AUTH_TOKEN_COOKIE } from "../../lib/api/auth";
 const fallbackUserSummary: UserSummary = {
   totalUsers: 84,
   activeUsers: 52,
-  invitedUsers: 11,
+  pendingUsers: 11,
   suspendedUsers: 6,
-  removedUsers: 15,
+  deactivatedUsers: 15,
 };
 
 const fallbackContentSummary: ContentSummary = {
@@ -287,7 +287,7 @@ export default async function DashboardPage() {
       label: "Active Users",
       tone: "blue" as const,
       value: formatCount(userSummary.activeUsers),
-      helper: `${formatCount(userSummary.invitedUsers)} invited and waiting to join`,
+      helper: `${formatCount(userSummary.pendingUsers)} pending and waiting to join`,
       icon: "US",
     },
     {
@@ -308,7 +308,7 @@ export default async function DashboardPage() {
       label: "Suspended Accounts",
       tone: "blue" as const,
       value: formatCount(userSummary.suspendedUsers),
-      helper: `${formatCount(userSummary.removedUsers)} removed accounts kept for audit history`,
+      helper: `${formatCount(userSummary.deactivatedUsers)} deactivated accounts kept for audit history`,
       icon: "AC",
     },
   ];
@@ -318,7 +318,7 @@ export default async function DashboardPage() {
       metric: "Users lifecycle",
       detail: `${formatCount(userSummary.totalUsers)} total managed accounts`,
       value: `${formatCount(userSummary.activeUsers)} active`,
-      trend: `${formatCount(userSummary.invitedUsers)} pending`,
+      trend: `${formatCount(userSummary.pendingUsers)} pending`,
     },
     {
       metric: "Topics in production",

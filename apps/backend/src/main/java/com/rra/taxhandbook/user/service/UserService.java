@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -14,7 +15,7 @@ import com.rra.taxhandbook.common.dto.ApiResponse;
 import com.rra.taxhandbook.common.enums.LanguageCode;
 import com.rra.taxhandbook.common.enums.UserRole;
 import com.rra.taxhandbook.common.exception.ResourceNotFoundException;
-import com.rra.taxhandbook.notification.EmailDeliveryService;
+import com.rra.taxhandbook.notification.EmailNotificationQueueService;
 import com.rra.taxhandbook.role.entity.Role;
 import com.rra.taxhandbook.role.service.RoleService;
 import com.rra.taxhandbook.user.dto.AcceptInviteRequest;
@@ -33,24 +34,28 @@ import com.rra.taxhandbook.user.repository.UserRepository;
 
 @Service
 public class UserService {
+	private static final String PASSWORD_POLICY_MESSAGE = "Password must be at least 8 characters and include uppercase, lowercase, number, and special character.";
 
 	private final UserRepository userRepository;
 	private final RoleService roleService;
 	private final PasswordEncoder passwordEncoder;
-	private final EmailDeliveryService emailDeliveryService;
+	private final EmailNotificationQueueService emailNotificationQueueService;
 	private final AuditLogService auditLogService;
+
+	@Value("${app.security.expose-sensitive-tokens:false}")
+	private boolean exposeSensitiveTokens;
 
 	public UserService(
 		UserRepository userRepository,
 		RoleService roleService,
 		PasswordEncoder passwordEncoder,
-		EmailDeliveryService emailDeliveryService,
+		EmailNotificationQueueService emailNotificationQueueService,
 		AuditLogService auditLogService
 	) {
 		this.userRepository = userRepository;
 		this.roleService = roleService;
 		this.passwordEncoder = passwordEncoder;
-		this.emailDeliveryService = emailDeliveryService;
+		this.emailNotificationQueueService = emailNotificationQueueService;
 		this.auditLogService = auditLogService;
 	}
 
@@ -76,7 +81,7 @@ public class UserService {
 	}
 
 	public List<PendingInviteResponse> getPendingInvites() {
-		return userRepository.findByStatusOrderByCreatedAtDesc("INVITED").stream()
+		return userRepository.findByStatusOrderByCreatedAtDesc("PENDING").stream()
 			.map(this::toPendingInviteResponse)
 			.toList();
 	}
@@ -85,9 +90,9 @@ public class UserService {
 		return new UserSummaryResponse(
 			userRepository.count(),
 			userRepository.countByStatusIgnoreCase("ACTIVE"),
-			userRepository.countByStatusIgnoreCase("INVITED"),
+			userRepository.countByStatusIgnoreCase("PENDING"),
 			userRepository.countByStatusIgnoreCase("SUSPENDED"),
-			userRepository.countByStatusIgnoreCase("REMOVED")
+			userRepository.countByStatusIgnoreCase("DEACTIVATED")
 		);
 	}
 
@@ -104,22 +109,53 @@ public class UserService {
 	}
 
 	public ApiResponse<UserResponse> updateUserProfile(Long id, UpdateUserProfileRequest request, String actor) {
-		if (request.fullName() == null || request.fullName().isBlank()) {
-			throw new IllegalArgumentException("Full name is required.");
+		if (request.employeeId() == null || request.employeeId().isBlank()) {
+			throw new IllegalArgumentException("Employee ID is required.");
+		}
+		if (request.firstName() == null || request.firstName().isBlank()) {
+			throw new IllegalArgumentException("First name is required.");
+		}
+		if (request.lastName() == null || request.lastName().isBlank()) {
+			throw new IllegalArgumentException("Last name is required.");
 		}
 		if (request.email() == null || request.email().isBlank()) {
 			throw new IllegalArgumentException("Email is required.");
 		}
 		User user = userRepository.findById(id)
 			.orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
+		String normalizedEmployeeId = request.employeeId().trim();
 		String normalizedEmail = request.email().trim().toLowerCase();
+		String normalizedUsername = UsernameGenerator.generate(request.firstName(), normalizedEmployeeId);
+		userRepository.findByEmployeeId(normalizedEmployeeId).ifPresent(existing -> {
+			if (!existing.getId().equals(id)) {
+				throw new IllegalArgumentException("A system user already exists for employee ID " + normalizedEmployeeId);
+			}
+		});
 		userRepository.findByEmail(normalizedEmail).ifPresent(existing -> {
 			if (!existing.getId().equals(id)) {
 				throw new IllegalArgumentException("A system user already exists for email " + normalizedEmail);
 			}
 		});
+		if (normalizedUsername != null) {
+			userRepository.findByUsername(normalizedUsername).ifPresent(existing -> {
+				if (!existing.getId().equals(id)) {
+					throw new IllegalArgumentException("A system user already exists for username " + normalizedUsername);
+				}
+			});
+		}
 		LanguageCode locale = request.preferredLocale() == null ? LanguageCode.EN : request.preferredLocale();
-		user.updateProfile(request.fullName().trim(), normalizedEmail, locale);
+		user.updateProfile(
+			normalizedEmployeeId,
+			request.firstName().trim(),
+			request.lastName().trim(),
+			normalizedEmail,
+			normalizedUsername,
+			normalizeOptionalValue(request.phoneNumber()),
+			normalizeOptionalValue(request.department()),
+			normalizeOptionalValue(request.position()),
+			locale,
+			resolveActorId(actor)
+		);
 		User savedUser = userRepository.save(user);
 		auditLogService.log("USER_PROFILE_UPDATED", actor, savedUser.getEmail(), "User profile details updated");
 		return new ApiResponse<>("User profile updated successfully", toResponse(savedUser));
@@ -141,37 +177,89 @@ public class UserService {
 		return new ApiResponse<>("User role updated successfully", toResponse(savedUser));
 	}
 
-	public ApiResponse<UserResponse> createUser(UserRequest request) {
+	public ApiResponse<UserResponse> createUser(UserRequest request, String actor) {
 		return createUserWithPassword(new AdminSetPasswordUserRequest(
-			request.fullName(),
+			request.employeeId(),
+			request.firstName(),
+			request.lastName(),
 			request.email(),
+			null,
 			request.roleName(),
 			request.preferredLocale(),
+			request.phoneNumber(),
+			request.department(),
+			request.position(),
 			request.password()
-		));
+		), actor);
 	}
 
-	public ApiResponse<UserResponse> createUserWithPassword(AdminSetPasswordUserRequest request) {
+	public ApiResponse<UserResponse> createUser(UserRequest request) {
+		return createUser(request, "system");
+	}
+
+	public ApiResponse<UserResponse> createUserWithPassword(AdminSetPasswordUserRequest request, String actor) {
 		if (request.password() == null || request.password().isBlank()) {
 			throw new IllegalArgumentException("Password is required when creating a local active user.");
 		}
-		User savedUser = userRepository.save(buildUser(request.fullName(), request.email(), request.roleName(), request.preferredLocale(), "ACTIVE", null, null, passwordEncoder.encode(request.password())));
+		validatePasswordStrength(request.password());
+		User savedUser = userRepository.save(buildUser(
+			request.employeeId(),
+			request.firstName(),
+			request.lastName(),
+			request.email(),
+			null,
+			request.roleName(),
+			request.preferredLocale(),
+			request.phoneNumber(),
+			request.department(),
+			request.position(),
+			"ACTIVE",
+			null,
+			null,
+			passwordEncoder.encode(request.password()),
+			resolveActorId(actor)
+		));
+		auditLogService.log("USER_CREATED", actor, savedUser.getEmail(), "Local system user created");
 		return new ApiResponse<>("Local system user created successfully", toResponse(savedUser));
 	}
 
-	public ApiResponse<UserInviteResponse> inviteUser(InviteUserRequest request) {
+	public ApiResponse<UserResponse> createUserWithPassword(AdminSetPasswordUserRequest request) {
+		return createUserWithPassword(request, "system");
+	}
+
+	public ApiResponse<UserInviteResponse> inviteUser(InviteUserRequest request, String actor) {
 		Instant expiresAt = Instant.now().plusSeconds(60 * 60 * 24);
 		String inviteToken = UUID.randomUUID().toString();
-		User savedUser = userRepository.save(buildUser(request.fullName(), request.email(), request.roleName(), request.preferredLocale(), "INVITED", inviteToken, expiresAt, null));
-		emailDeliveryService.sendInviteEmail(savedUser.getEmail(), savedUser.getFullName(), inviteToken, expiresAt.toString());
-		auditLogService.log("USER_INVITED", "system", savedUser.getEmail(), "Invitation created for role " + savedUser.getRole().getName());
+		User savedUser = userRepository.save(buildUser(
+			request.employeeId(),
+			request.firstName(),
+			request.lastName(),
+			request.email(),
+			null,
+			request.roleName(),
+			request.preferredLocale(),
+			request.phoneNumber(),
+			request.department(),
+			request.position(),
+			"PENDING",
+			inviteToken,
+			expiresAt,
+			null,
+			resolveActorId(actor)
+		));
+		sendInviteEmail(savedUser, inviteToken, expiresAt, actor, "USER_INVITED");
+		auditLogService.log("USER_INVITED", actor, savedUser.getEmail(), "Invitation created for role " + savedUser.getRole().getName());
 		return new ApiResponse<>("User invitation created successfully", new UserInviteResponse(
 			savedUser.getId(),
 			savedUser.getEmail(),
-			inviteToken,
-			expiresAt.toString(),
+			exposeSensitiveTokens ? inviteToken : null,
+			exposeSensitiveTokens ? expiresAt.toString() : null,
 			savedUser.getStatus()
 		));
+	}
+
+	public ApiResponse<UserInviteResponse> inviteUser(InviteUserRequest request) {
+		return inviteUser(request, "system");
 	}
 
 	public ApiResponse<UserResponse> acceptInvite(AcceptInviteRequest request) {
@@ -181,6 +269,7 @@ public class UserService {
 		if (request.password() == null || request.password().isBlank()) {
 			throw new IllegalArgumentException("Password is required.");
 		}
+		validatePasswordStrength(request.password());
 		User user = userRepository.findByInviteToken(request.token())
 			.orElseThrow(() -> new ResourceNotFoundException("Invitation token is invalid."));
 		if (user.getInviteExpiresAt() == null || user.getInviteExpiresAt().isBefore(Instant.now())) {
@@ -194,20 +283,20 @@ public class UserService {
 	public ApiResponse<UserInviteResponse> resendInvite(Long id, String actor) {
 		User user = userRepository.findById(id)
 			.orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
-		if (!"INVITED".equalsIgnoreCase(user.getStatus())) {
-			throw new IllegalArgumentException("Invite can only be resent for users in INVITED status.");
+		if (!"PENDING".equalsIgnoreCase(user.getStatus())) {
+			throw new IllegalArgumentException("Invite can only be resent for users in PENDING status.");
 		}
 		Instant expiresAt = Instant.now().plusSeconds(60 * 60 * 24);
 		String inviteToken = UUID.randomUUID().toString();
 		user.reissueInvite(inviteToken, expiresAt);
 		User savedUser = userRepository.save(user);
-		emailDeliveryService.sendInviteEmail(savedUser.getEmail(), savedUser.getFullName(), inviteToken, expiresAt.toString());
+		sendInviteEmail(savedUser, inviteToken, expiresAt, actor, "INVITE_RESENT");
 		auditLogService.log("INVITE_RESENT", actor, savedUser.getEmail(), "Invite token regenerated");
 		return new ApiResponse<>("Invite resent successfully", new UserInviteResponse(
 			savedUser.getId(),
 			savedUser.getEmail(),
-			inviteToken,
-			expiresAt.toString(),
+			exposeSensitiveTokens ? inviteToken : null,
+			exposeSensitiveTokens ? expiresAt.toString() : null,
 			savedUser.getStatus()
 		));
 	}
@@ -215,7 +304,7 @@ public class UserService {
 	public ApiResponse<String> cancelInvite(Long id, String actor) {
 		User user = userRepository.findById(id)
 			.orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
-		if (!"INVITED".equalsIgnoreCase(user.getStatus())) {
+		if (!"PENDING".equalsIgnoreCase(user.getStatus())) {
 			throw new IllegalArgumentException("Only pending invites can be cancelled.");
 		}
 		user.cancelInvite();
@@ -227,20 +316,20 @@ public class UserService {
 	public ApiResponse<UserInviteResponse> restoreUser(Long id, String actor) {
 		User user = userRepository.findById(id)
 			.orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
-		if (!"REMOVED".equalsIgnoreCase(user.getStatus())) {
-			throw new IllegalArgumentException("Only removed users can be restored.");
+		if (!"DEACTIVATED".equalsIgnoreCase(user.getStatus())) {
+			throw new IllegalArgumentException("Only deactivated users can be restored.");
 		}
 		Instant expiresAt = Instant.now().plusSeconds(60 * 60 * 24);
 		String inviteToken = UUID.randomUUID().toString();
 		user.reissueInvite(inviteToken, expiresAt);
 		User savedUser = userRepository.save(user);
-		emailDeliveryService.sendInviteEmail(savedUser.getEmail(), savedUser.getFullName(), inviteToken, expiresAt.toString());
-		auditLogService.log("USER_RESTORED", actor, savedUser.getEmail(), "Removed user restored and re-invited");
+		sendInviteEmail(savedUser, inviteToken, expiresAt, actor, "USER_RESTORED");
+		auditLogService.log("USER_RESTORED", actor, savedUser.getEmail(), "Deactivated user restored and re-invited");
 		return new ApiResponse<>("User restored and re-invited successfully", new UserInviteResponse(
 			savedUser.getId(),
 			savedUser.getEmail(),
-			inviteToken,
-			expiresAt.toString(),
+			exposeSensitiveTokens ? inviteToken : null,
+			exposeSensitiveTokens ? expiresAt.toString() : null,
 			savedUser.getStatus()
 		));
 	}
@@ -274,23 +363,24 @@ public class UserService {
 
 	public InvitePreviewResponse previewInviteToken(String token) {
 		if (token == null || token.isBlank()) {
-			return new InvitePreviewResponse(false, false, null, null, null, null, null, "Invite token is required.");
+			return new InvitePreviewResponse(false, false, null, null, null, null, null, null, "Invite token is required.");
 		}
 		return userRepository.findByInviteToken(token)
 			.map(user -> {
 				boolean expired = user.getInviteExpiresAt() == null || user.getInviteExpiresAt().isBefore(Instant.now());
 				return new InvitePreviewResponse(
-					!expired && "INVITED".equalsIgnoreCase(user.getStatus()),
+					!expired && "PENDING".equalsIgnoreCase(user.getStatus()),
 					expired,
 					user.getEmail(),
 					user.getFullName(),
+					user.getUsername(),
 					user.getRole().getName(),
 					user.getPreferredLocale().name(),
 					user.getInviteExpiresAt() == null ? null : user.getInviteExpiresAt().toString(),
 					expired ? "Invite token has expired." : "Invite token is valid."
 				);
 			})
-			.orElse(new InvitePreviewResponse(false, false, null, null, null, null, null, "Invite token is invalid."));
+			.orElse(new InvitePreviewResponse(false, false, null, null, null, null, null, null, "Invite token is invalid."));
 	}
 
 	public ApiResponse<String> removeUser(Long id, String actor) {
@@ -298,20 +388,43 @@ public class UserService {
 			.orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
 		user.removeAccess();
 		userRepository.save(user);
-		auditLogService.log("USER_REMOVED", actor, user.getEmail(), "User access removed");
-		return new ApiResponse<>("User removed successfully", user.getEmail());
+		auditLogService.log("USER_REMOVED", actor, user.getEmail(), "User access deactivated");
+		return new ApiResponse<>("User deactivated successfully", user.getEmail());
 	}
 
 	private UserResponse toResponse(User user) {
 		return new UserResponse(
 			user.getId(),
+			user.getEmployeeId(),
 			user.getUserCode(),
+			user.getUsername(),
+			user.getFirstName(),
+			user.getLastName(),
 			user.getFullName(),
 			user.getEmail(),
+			user.getPhoneNumber(),
+			user.getDepartment(),
+			user.getPosition(),
 			user.getRole().getName(),
 			user.getPreferredLocale().name(),
 			user.getSource().name(),
-			user.getStatus()
+			user.getStatus(),
+			user.isActive(),
+			user.isLocked(),
+			user.getFailedLoginAttempts(),
+			user.getLastLoginAt() == null ? null : user.getLastLoginAt().toString()
+		);
+	}
+
+	private void sendInviteEmail(User user, String inviteToken, Instant expiresAt, String actor, String action) {
+		emailNotificationQueueService.queueInviteEmail(
+			user.getEmail(),
+			user.getFullName(),
+			user.getUsername(),
+			inviteToken,
+			expiresAt,
+			actor,
+			action
 		);
 	}
 
@@ -319,9 +432,16 @@ public class UserService {
 		boolean expired = user.getInviteExpiresAt() != null && user.getInviteExpiresAt().isBefore(Instant.now());
 		return new PendingInviteResponse(
 			user.getId(),
+			user.getEmployeeId(),
 			user.getUserCode(),
+			user.getUsername(),
+			user.getFirstName(),
+			user.getLastName(),
 			user.getFullName(),
 			user.getEmail(),
+			user.getPhoneNumber(),
+			user.getDepartment(),
+			user.getPosition(),
 			user.getRole().getName(),
 			user.getPreferredLocale().name(),
 			user.getInviteToken(),
@@ -332,17 +452,30 @@ public class UserService {
 	}
 
 	private User buildUser(
-		String fullName,
+		String employeeId,
+		String firstName,
+		String lastName,
 		String email,
+		String username,
 		String roleName,
 		LanguageCode preferredLocale,
+		String phoneNumber,
+		String department,
+		String position,
 		String status,
 		String inviteToken,
 		Instant inviteExpiresAt,
-		String passwordHash
+		String passwordHash,
+		Long createdBy
 	) {
-		if (fullName == null || fullName.isBlank()) {
-			throw new IllegalArgumentException("Full name is required.");
+		if (employeeId == null || employeeId.isBlank()) {
+			throw new IllegalArgumentException("Employee ID is required.");
+		}
+		if (firstName == null || firstName.isBlank()) {
+			throw new IllegalArgumentException("First name is required.");
+		}
+		if (lastName == null || lastName.isBlank()) {
+			throw new IllegalArgumentException("Last name is required.");
 		}
 		if (email == null || email.isBlank()) {
 			throw new IllegalArgumentException("Email is required.");
@@ -353,38 +486,49 @@ public class UserService {
 			throw new IllegalArgumentException("PUBLIC cannot be assigned to a local authenticated system user.");
 		}
 
+		String normalizedEmployeeId = employeeId.trim();
 		String normalizedEmail = email.trim().toLowerCase();
-		String userCode = generateUserCode(fullName);
+		String normalizedUsername = UsernameGenerator.generate(firstName, normalizedEmployeeId);
+		userRepository.findByEmployeeId(normalizedEmployeeId).ifPresent(existing -> {
+			throw new IllegalArgumentException("A system user already exists for employee ID " + normalizedEmployeeId);
+		});
 		userRepository.findByEmail(normalizedEmail).ifPresent(existing -> {
 			throw new IllegalArgumentException("A system user already exists for email " + normalizedEmail);
 		});
-		userRepository.findByUserCode(userCode).ifPresent(existing -> {
-			throw new IllegalArgumentException("A system user already exists for generated code " + userCode);
-		});
+		if (normalizedUsername != null) {
+			userRepository.findByUsername(normalizedUsername).ifPresent(existing -> {
+				throw new IllegalArgumentException("A system user already exists for username " + normalizedUsername);
+			});
+		}
 
 		return new User(
-			userCode,
-			fullName.trim(),
+			normalizedEmployeeId,
+			firstName.trim(),
+			lastName.trim(),
 			normalizedEmail,
+			normalizedUsername,
 			passwordHash,
 			resolvedLocale,
 			UserSource.LOCAL,
 			status,
+			"ACTIVE".equalsIgnoreCase(status),
+			false,
+			0,
+			null,
 			inviteToken,
 			inviteExpiresAt,
 			null,
 			null,
+			normalizeOptionalValue(phoneNumber),
+			normalizeOptionalValue(department),
+			normalizeOptionalValue(position),
 			Instant.now(),
+			null,
+			null,
+			createdBy,
+			null,
 			role
 		);
-	}
-
-	private String generateUserCode(String fullName) {
-		String normalized = fullName == null ? "user" : fullName.trim().replaceAll("[^A-Za-z0-9]+", "-").replaceAll("(^-|-$)", "");
-		if (normalized.isBlank()) {
-			normalized = "user";
-		}
-		return "LOCAL-" + normalized.toUpperCase() + "-" + Instant.now().toEpochMilli();
 	}
 
 	private String normalizeFilter(String value) {
@@ -405,8 +549,40 @@ public class UserService {
 		}
 
 		String normalizedSearch = search.toLowerCase();
-		return user.getFullName().toLowerCase().contains(normalizedSearch)
+		return user.getEmployeeId().toLowerCase().contains(normalizedSearch)
+			|| user.getFirstName().toLowerCase().contains(normalizedSearch)
+			|| user.getLastName().toLowerCase().contains(normalizedSearch)
+			|| user.getFullName().toLowerCase().contains(normalizedSearch)
 			|| user.getEmail().toLowerCase().contains(normalizedSearch)
-			|| user.getUserCode().toLowerCase().contains(normalizedSearch);
+			|| (user.getUsername() != null && user.getUsername().toLowerCase().contains(normalizedSearch));
+	}
+
+	private String normalizeOptionalValue(String value) {
+		if (value == null) {
+			return null;
+		}
+		String trimmed = value.trim();
+		return trimmed.isEmpty() ? null : trimmed;
+	}
+
+	private Long resolveActorId(String actor) {
+		if (actor == null || actor.isBlank()) {
+			return null;
+		}
+		String normalizedActor = actor.trim().toLowerCase();
+		return userRepository.findByEmail(normalizedActor)
+			.or(() -> userRepository.findByUsername(normalizedActor))
+			.map(User::getId)
+			.orElse(null);
+	}
+
+	private void validatePasswordStrength(String password) {
+		boolean hasUppercase = password.chars().anyMatch(Character::isUpperCase);
+		boolean hasLowercase = password.chars().anyMatch(Character::isLowerCase);
+		boolean hasDigit = password.chars().anyMatch(Character::isDigit);
+		boolean hasSpecial = password.chars().anyMatch(ch -> !Character.isLetterOrDigit(ch));
+		if (password.length() < 8 || !hasUppercase || !hasLowercase || !hasDigit || !hasSpecial) {
+			throw new IllegalArgumentException(PASSWORD_POLICY_MESSAGE);
+		}
 	}
 }
