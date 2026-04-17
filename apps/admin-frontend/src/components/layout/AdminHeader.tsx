@@ -96,17 +96,29 @@ export function AdminHeader() {
     [],
   );
 
+  // Pages where the search bar filters page data via URL ?search= param
+  const DATA_PAGES = [routes.users, routes.content, routes.roles, routes.auditLogs];
+  const isDataPage = DATA_PAGES.some((p) => pathname === p || pathname?.startsWith(p + "/"));
+
   const trimmedQuery = query.trim().toLowerCase();
   const searchResults = useMemo(() => {
-    if (!trimmedQuery) {
-      return searchItems.slice(0, 5);
-    }
-
+    if (isDataPage) return [];
+    if (!trimmedQuery) return searchItems.slice(0, 5);
     return searchItems.filter((item) => {
       const haystack = [item.label, item.description, ...item.keywords].join(" ").toLowerCase();
       return haystack.includes(trimmedQuery);
     });
-  }, [searchItems, trimmedQuery]);
+  }, [searchItems, trimmedQuery, isDataPage]);
+
+  // Sync search input with URL ?search= param when on a data page
+  useEffect(() => {
+    if (isDataPage) {
+      const params = new URLSearchParams(window.location.search);
+      setQuery(params.get("search") ?? "");
+    } else {
+      setQuery("");
+    }
+  }, [pathname, isDataPage]);
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
@@ -130,11 +142,21 @@ export function AdminHeader() {
   function handleSearchSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const firstResult = searchResults[0];
-    if (!firstResult) {
+    if (isDataPage) {
+      const params = new URLSearchParams(window.location.search);
+      if (query.trim()) {
+        params.set("search", query.trim());
+      } else {
+        params.delete("search");
+      }
+      params.delete("page");
+      router.push(`${pathname}?${params.toString()}`);
+      setIsSearchOpen(false);
       return;
     }
 
+    const firstResult = searchResults[0];
+    if (!firstResult) return;
     setIsSearchOpen(false);
     router.push(firstResult.href);
   }
@@ -148,7 +170,7 @@ export function AdminHeader() {
   return (
     <header className="admin-header">
       <div className="header-left">
-        <div className="header-brand">
+        <a href="/dashboard" className="header-brand">
           <div className="header-brand-logo" aria-hidden="true">
             <Image
               alt="RRA Logo"
@@ -163,7 +185,7 @@ export function AdminHeader() {
             <span className="header-brand-name">RRA Admin</span>
             <span className="header-brand-subtitle">Tax Handbook Platform</span>
           </div>
-        </div>
+        </a>
       </div>
 
       <nav className="header-nav" aria-label="Primary">
@@ -193,18 +215,26 @@ export function AdminHeader() {
         >
           <label className="search-shell" aria-label="Search admin pages">
             <span className="search-icon" aria-hidden="true">
-              Q
+            
             </span>
             <input
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                if (isDataPage && event.target.value === "") {
+                  const params = new URLSearchParams(window.location.search);
+                  params.delete("search");
+                  params.delete("page");
+                  router.push(`${pathname}?${params.toString()}`);
+                }
+              }}
               onFocus={() => setIsSearchOpen(true)}
-              placeholder="Search admin pages..."
+              placeholder={isDataPage ? `Search on this page…` : " Search ..."}
               type="search"
               value={query}
             />
           </label>
 
-          {isSearchOpen ? (
+          {isSearchOpen && !isDataPage && (
             <div className="search-results" role="listbox" aria-label="Search results">
               {searchResults.length > 0 ? (
                 searchResults.map((item) => (
@@ -224,12 +254,10 @@ export function AdminHeader() {
                 </div>
               )}
             </div>
-          ) : null}
+          )}
         </form>
 
-        <button className="icon-button" type="button" aria-label="Switch language">
-          EN
-        </button>
+      
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

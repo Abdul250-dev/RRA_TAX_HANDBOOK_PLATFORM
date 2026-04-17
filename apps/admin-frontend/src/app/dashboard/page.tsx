@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { DashboardStats } from "../../components/admin/DashboardStats";
+import { DashboardHeroActions } from "../../components/admin/DashboardHeroActions";
 import { DataTable } from "../../components/admin/DataTable";
 import { FilterBar } from "../../components/admin/FilterBar";
 import { AdminLayout } from "../../components/layout/AdminLayout";
@@ -252,7 +253,7 @@ function ChartPanel({ contentSummary }: { contentSummary: ContentSummary }) {
 
 async function getDashboardData() {
   const cookieStore = await cookies();
-  const token = cookieStore.get(AUTH_TOKEN_COOKIE)?.value;
+  const token = cookieStore.get(AUTH_TOKEN_COOKIE)?.value as string;
 
   if (!token) {
     redirect("/login");
@@ -266,19 +267,20 @@ async function getDashboardData() {
       getPublishQueue(token),
     ]);
 
-    return { contentSummary, publishQueue, reviewQueue, userSummary };
+    return { contentSummary, publishQueue, reviewQueue, userSummary, token };
   } catch {
     return {
       contentSummary: fallbackContentSummary,
       publishQueue: fallbackPublishQueue,
       reviewQueue: fallbackReviewQueue,
       userSummary: fallbackUserSummary,
+      token,
     };
   }
 }
 
 export default async function DashboardPage() {
-  const { contentSummary, publishQueue, reviewQueue, userSummary } = await getDashboardData();
+  const { contentSummary, publishQueue, reviewQueue, userSummary, token } = await getDashboardData();
 
   const statItems = [
     {
@@ -344,14 +346,7 @@ export default async function DashboardPage() {
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <button className="pill-button" type="button">
-              Create Content
-            </button>
-            <button className="pill-button pill-button-secondary" type="button">
-              Invite User
-            </button>
-          </div>
+          <DashboardHeroActions token={token} />
         </section>
 
         <DashboardStats items={statItems} />

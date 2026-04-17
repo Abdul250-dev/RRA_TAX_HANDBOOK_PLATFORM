@@ -40,9 +40,11 @@ public class UserController {
 	@PreAuthorize("hasRole('ADMIN')")
 	public List<UserResponse> getUsers(
 		@RequestParam(required = false) String status,
-		@RequestParam(required = false) String search
+		@RequestParam(required = false) String search,
+		@RequestParam(required = false, defaultValue = "0") int page,
+		@RequestParam(required = false, defaultValue = "10") int pageSize
 	) {
-		return userService.getUsers(status, search);
+		return userService.getUsers(status, search, page, pageSize);
 	}
 
 	@GetMapping("/invited")

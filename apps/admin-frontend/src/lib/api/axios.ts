@@ -1,14 +1,19 @@
 const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8081";
 
 interface ApiClientOptions {
-  body?: BodyInit;
+  body?: BodyInit | Record<string, any>;
+  data?: Record<string, any>;
   headers?: HeadersInit;
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   token?: string;
 }
 
 export async function apiClient<T>(path: string, options: ApiClientOptions = {}): Promise<T> {
-  const { body, headers, method = "GET", token } = options;
+  const { body: rawBody, data, headers, method = "GET", token } = options;
+  
+  // Support both 'body' and 'data' parameters
+  const body = rawBody || (data ? JSON.stringify(data) : undefined);
+  
   const response = await fetch(`${baseUrl}${path}`, {
     method,
     body,

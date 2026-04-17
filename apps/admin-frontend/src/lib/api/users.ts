@@ -1,4 +1,4 @@
-import type { User, UserActivity, UserInviteResponse, UserSummary } from "../../types/user";
+import type { User, UserActivity, UserInviteResponse, UserSummary, InviteUserRequest } from "../../types/user";
 import { apiClient } from "./axios";
 
 interface ApiResponse<T> {
@@ -6,7 +6,7 @@ interface ApiResponse<T> {
   data: T;
 }
 
-export async function getUsers(token?: string, params?: { status?: string; search?: string }) {
+export async function getUsers(token?: string, params?: { status?: string; search?: string; page?: number; pageSize?: number }) {
   const query = new URLSearchParams();
 
   if (params?.status) {
@@ -15,6 +15,14 @@ export async function getUsers(token?: string, params?: { status?: string; searc
 
   if (params?.search) {
     query.set("search", params.search);
+  }
+
+  if (params?.page !== undefined) {
+    query.set("page", params.page.toString());
+  }
+
+  if (params?.pageSize !== undefined) {
+    query.set("pageSize", params.pageSize.toString());
   }
 
   const suffix = query.toString() ? `?${query.toString()}` : "";
@@ -61,5 +69,20 @@ export async function resendInvite(id: number, token?: string) {
   return apiClient<ApiResponse<UserInviteResponse>>(`/api/users/${id}/resend`, {
     method: "POST",
     token,
+  });
+}
+
+export async function inviteUser(data: InviteUserRequest, token?: string) {
+  return apiClient<ApiResponse<UserInviteResponse>>("/api/users/invite", {
+    method: "POST",
+    token,
+    data,
+  });
+}
+
+export async function acceptInvite(inviteToken: string, password: string) {
+  return apiClient<ApiResponse<User>>("/api/users/accept-invite", {
+    method: "POST",
+    data: { token: inviteToken, password },
   });
 }

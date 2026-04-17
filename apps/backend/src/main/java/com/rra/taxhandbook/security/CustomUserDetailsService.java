@@ -46,6 +46,9 @@ public class CustomUserDetailsService implements UserDetailsService {
 				|| user.getPasswordHash().isBlank()) {
 				throw new UsernameNotFoundException("User is not active for login: " + username);
 			}
+			if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
+				throw new UsernameNotFoundException("User has no password set: " + username);
+			}
 			return new User(
 				user.getUsername(),
 				user.getPasswordHash(),

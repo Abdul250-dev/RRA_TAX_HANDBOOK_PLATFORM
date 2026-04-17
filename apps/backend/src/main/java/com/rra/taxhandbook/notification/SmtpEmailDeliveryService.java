@@ -42,7 +42,7 @@ public class SmtpEmailDeliveryService implements EmailDeliveryService {
 		SimpleMailMessage message = new SimpleMailMessage();
 		message.setFrom(fromEmail);
 		message.setTo(recipientEmail);
-		message.setSubject("RRA Tax Handbook invitation");
+		message.setSubject("You're invited to RRA Tax Handbook");
 		message.setText(
 			"Hello " + fullName + ",\n\n" +
 			"You have been invited to access the RRA Tax Handbook platform.\n" +

@@ -16,6 +16,7 @@ export interface User {
   preferredLocale: string;
   source: string;
   status: UserStatus;
+  createdAt?: string;
   isActive?: boolean;
   isLocked?: boolean;
   failedLoginAttempts?: number;
@@ -36,6 +37,13 @@ export interface UserInviteResponse {
   inviteToken?: string | null;
   expiresAt?: string | null;
   status: UserStatus;
+}
+
+export interface InviteUserRequest {
+  fullName: string;
+  email: string;
+  roleName: string;
+  preferredLocale?: string;
 }
 
 export interface UserActivity {

@@ -112,7 +112,7 @@ public class AuthService {
 			.map(grantedAuthority -> grantedAuthority.getAuthority().replace("ROLE_", ""))
 			.orElse("ADMIN");
 
-		return new LoginResponse(username, jwtService.generateToken(username, role), role);
+		return new LoginResponse(request.username(), jwtService.generateToken(request.username(), role), role);
 	}
 
 	public ApiResponse<PasswordResetResponse> forgotPassword(ForgotPasswordRequest request) {
