@@ -15,7 +15,8 @@ import {
   type TopicSummary,
   type UserSummary,
 } from "../../lib/api/dashboard";
-import { AUTH_TOKEN_COOKIE } from "../../lib/api/auth";
+import { AUTH_ROLE_COOKIE, AUTH_TOKEN_COOKIE } from "../../lib/api/auth";
+import { canManageUsers } from "../../lib/authz";
 
 const fallbackUserSummary: UserSummary = {
   totalUsers: 84,
@@ -254,6 +255,7 @@ function ChartPanel({ contentSummary }: { contentSummary: ContentSummary }) {
 async function getDashboardData() {
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_TOKEN_COOKIE)?.value as string;
+  const role = cookieStore.get(AUTH_ROLE_COOKIE)?.value ?? null;
 
   if (!token) {
     redirect("/login");
@@ -261,13 +263,13 @@ async function getDashboardData() {
 
   try {
     const [userSummary, contentSummary, reviewQueue, publishQueue] = await Promise.all([
-      getUserSummary(token),
+      canManageUsers(role) ? getUserSummary(token) : Promise.resolve(fallbackUserSummary),
       getContentSummary(token),
       getReviewQueue(token),
       getPublishQueue(token),
     ]);
 
-    return { contentSummary, publishQueue, reviewQueue, userSummary, token };
+    return { contentSummary, publishQueue, reviewQueue, userSummary, token, role };
   } catch {
     return {
       contentSummary: fallbackContentSummary,
@@ -275,12 +277,13 @@ async function getDashboardData() {
       reviewQueue: fallbackReviewQueue,
       userSummary: fallbackUserSummary,
       token,
+      role,
     };
   }
 }
 
 export default async function DashboardPage() {
-  const { contentSummary, publishQueue, reviewQueue, userSummary, token } = await getDashboardData();
+  const { contentSummary, publishQueue, reviewQueue, userSummary, token, role } = await getDashboardData();
 
   const statItems = [
     {
@@ -346,7 +349,7 @@ export default async function DashboardPage() {
             </p>
           </div>
 
-          <DashboardHeroActions token={token} />
+          <DashboardHeroActions role={role} token={token} />
         </section>
 
         <DashboardStats items={statItems} />
