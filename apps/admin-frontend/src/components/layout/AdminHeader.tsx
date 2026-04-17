@@ -19,12 +19,13 @@ import {
 
 import { useAuth } from "../../hooks/useAuth";
 import { clearSession } from "../../lib/api/auth";
+import { canManageRoles, canManageUsers, canViewAuditLogs } from "../../lib/authz";
 import { routes } from "../../lib/constants/routes";
 
 export function AdminHeader() {
   const router = useRouter();
   const pathname = usePathname();
-  const { username } = useAuth();
+  const { username, role } = useAuth();
   const searchRef = useRef<HTMLFormElement | null>(null);
   const [query, setQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -43,15 +44,16 @@ export function AdminHeader() {
     .join("");
 
   const navigationItems = useMemo(
-    () => [
-      { href: routes.dashboard, label: "Dashboard" },
-      { href: routes.users, label: "Users" },
-      { href: routes.content, label: "Content" },
-      { href: routes.roles, label: "Roles" },
-      { href: routes.auditLogs, label: "Audit Logs" },
-      { href: routes.settings, label: "Settings" },
-    ],
-    [],
+    () =>
+      [
+        { href: routes.dashboard, label: "Dashboard", visible: true },
+        { href: routes.users, label: "Users", visible: canManageUsers(role) },
+        { href: routes.content, label: "Content", visible: true },
+        { href: routes.roles, label: "Roles", visible: canManageRoles(role) },
+        { href: routes.auditLogs, label: "Audit Logs", visible: canViewAuditLogs(role) },
+        { href: routes.settings, label: "Settings", visible: true },
+      ].filter((item) => item.visible),
+    [role],
   );
 
   const searchItems = useMemo(
@@ -67,6 +69,7 @@ export function AdminHeader() {
         label: "Users",
         description: "Manage admin users and access",
         keywords: ["accounts", "team", "members", "permissions"],
+        visible: canManageUsers(role),
       },
       {
         href: routes.content,
@@ -79,21 +82,24 @@ export function AdminHeader() {
         label: "Roles",
         description: "Control responsibilities and privileges",
         keywords: ["permissions", "access", "security"],
+        visible: canManageRoles(role),
       },
       {
         href: routes.auditLogs,
         label: "Audit Logs",
         description: "Track changes and admin activity",
         keywords: ["history", "activity", "logs", "events"],
+        visible: canViewAuditLogs(role),
       },
       {
         href: routes.settings,
         label: "Settings",
         description: "Adjust platform and admin preferences",
         keywords: ["preferences", "config", "system"],
+        visible: true,
       },
-    ],
-    [],
+    ].filter((item) => item.visible),
+    [role],
   );
 
   // Pages where the search bar filters page data via URL ?search= param

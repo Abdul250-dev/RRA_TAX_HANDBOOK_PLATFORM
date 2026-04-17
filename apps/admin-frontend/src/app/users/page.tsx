@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 
 import { UsersPageClient } from "../../components/admin/UsersPageClient";
 import { AdminLayout } from "../../components/layout/AdminLayout";
-import { AUTH_TOKEN_COOKIE } from "../../lib/api/auth";
+import { AUTH_ROLE_COOKIE, AUTH_TOKEN_COOKIE } from "../../lib/api/auth";
+import { canManageUsers } from "../../lib/authz";
 import { getUserSummary, getUsers } from "../../lib/api/users";
 import type { UserSummary } from "../../types/user";
 
@@ -18,9 +19,13 @@ const fallbackSummary: UserSummary = {
 async function getUsersData(status?: string, search?: string, page = 0, pageSize = 10) {
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_TOKEN_COOKIE)?.value;
+  const role = cookieStore.get(AUTH_ROLE_COOKIE)?.value;
 
   if (!token) {
     redirect("/login");
+  }
+  if (!canManageUsers(role)) {
+    redirect("/dashboard");
   }
 
   try {
