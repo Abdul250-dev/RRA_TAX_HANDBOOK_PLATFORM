@@ -170,7 +170,7 @@ export function AdminHeader() {
   return (
     <header className="admin-header">
       <div className="header-left">
-        <div className="header-brand">
+        <a href="/dashboard" className="header-brand">
           <div className="header-brand-logo" aria-hidden="true">
             <Image
               alt="RRA Logo"
@@ -185,7 +185,7 @@ export function AdminHeader() {
             <span className="header-brand-name">RRA Admin</span>
             <span className="header-brand-subtitle">Tax Handbook Platform</span>
           </div>
-        </div>
+        </a>
       </div>
 
       <nav className="header-nav" aria-label="Primary">

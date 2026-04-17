@@ -117,7 +117,7 @@ export function InviteUserModal({ isOpen, onClose, onSuccess, token }: InviteUse
               id="fullName"
               name="fullName"
               type="text"
-              placeholder="e.g. John Doe"
+              placeholder="e.g. Nshuti Abdul"
               disabled={isLoading}
               required
             />
@@ -129,7 +129,7 @@ export function InviteUserModal({ isOpen, onClose, onSuccess, token }: InviteUse
               id="email"
               name="email"
               type="email"
-              placeholder="e.g. john.doe@rra.gov.rw"
+              placeholder="e.g. nshutiblessing@rra.gov.rw"
               disabled={isLoading}
               required
             />
