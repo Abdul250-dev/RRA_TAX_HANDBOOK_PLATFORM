@@ -6,9 +6,10 @@ import { acceptInvite } from "../../lib/api/users";
 interface InviteFormProps {
   token: string;
   inviteeName: string;
+  username?: string | null;
 }
 
-export function InviteForm({ token, inviteeName }: InviteFormProps) {
+export function InviteForm({ token, inviteeName, username }: InviteFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -57,6 +58,7 @@ export function InviteForm({ token, inviteeName }: InviteFormProps) {
       <div className="login-panel-intro">
         <h3>Welcome, {inviteeName}</h3>
         <p>Set a password to activate your account.</p>
+        {username ? <p>Your username will be <strong>{username}</strong>.</p> : null}
       </div>
 
       {error && (

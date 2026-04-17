@@ -40,10 +40,15 @@ export interface UserInviteResponse {
 }
 
 export interface InviteUserRequest {
-  fullName: string;
+  employeeId: string;
+  firstName: string;
+  lastName: string;
   email: string;
   roleName: string;
   preferredLocale?: string;
+  phoneNumber?: string;
+  department?: string;
+  position?: string;
 }
 
 export interface UserActivity {

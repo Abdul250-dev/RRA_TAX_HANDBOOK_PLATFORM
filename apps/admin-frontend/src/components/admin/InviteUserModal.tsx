@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
+
 import { inviteUser } from "../../lib/api/users";
-import type { InviteUserRequest, UserInviteResponse } from "../../types/user";
+import type { InviteUserRequest } from "../../types/user";
 
 interface InviteUserModalProps {
   isOpen: boolean;
@@ -12,29 +13,61 @@ interface InviteUserModalProps {
   token?: string;
 }
 
+function generateUsername(firstName: string, employeeId: string) {
+  const normalizedPrefix = firstName.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+  const normalizedEmployeeId = employeeId.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  if (!normalizedPrefix || !normalizedEmployeeId) {
+    return "";
+  }
+
+  return normalizedPrefix.slice(0, 3) + normalizedEmployeeId;
+}
+
 export function InviteUserModal({ isOpen, onClose, onSuccess, token }: InviteUserModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [successUsername, setSuccessUsername] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const [firstName, setFirstName] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const generatedUsername = useMemo(
+    () => generateUsername(firstName, employeeId),
+    [employeeId, firstName],
+  );
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setError(null);
-    setSuccess(false);
+    setSuccessUsername(null);
     setIsLoading(true);
 
-    const formData = new FormData(e.currentTarget);
+    const formData = new FormData(event.currentTarget);
     const data: InviteUserRequest = {
-      fullName: formData.get("fullName") as string,
-      email: formData.get("email") as string,
-      roleName: formData.get("roleName") as string,
+      employeeId: (formData.get("employeeId") as string) || "",
+      firstName: (formData.get("firstName") as string) || "",
+      lastName: (formData.get("lastName") as string) || "",
+      email: (formData.get("email") as string) || "",
+      roleName: (formData.get("roleName") as string) || "",
       preferredLocale: (formData.get("preferredLocale") as string) || "EN",
+      phoneNumber: (formData.get("phoneNumber") as string) || "",
+      department: (formData.get("department") as string) || "",
+      position: (formData.get("position") as string) || "",
     };
 
-    // Validation
-    if (!data.fullName.trim()) {
-      setError("Full name is required");
+    if (!data.employeeId.trim()) {
+      setError("Employee ID is required");
+      setIsLoading(false);
+      return;
+    }
+    if (!data.firstName.trim()) {
+      setError("First name is required");
+      setIsLoading(false);
+      return;
+    }
+    if (!data.lastName.trim()) {
+      setError("Last name is required");
       setIsLoading(false);
       return;
     }
@@ -55,17 +88,19 @@ export function InviteUserModal({ isOpen, onClose, onSuccess, token }: InviteUse
     }
 
     try {
-      const response = await inviteUser(data, token);
-      if (response) {
-        setSuccess(true);
-        formRef.current?.reset();
-        setTimeout(() => {
-          onClose();
-          onSuccess();
-        }, 1500);
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to invite user. Please try again.";
+      await inviteUser(data, token);
+      setSuccessUsername(generateUsername(data.firstName, data.employeeId));
+      formRef.current?.reset();
+      setFirstName("");
+      setEmployeeId("");
+      setTimeout(() => {
+        onClose();
+        onSuccess();
+      }, 1800);
+    } catch (submissionError) {
+      const errorMessage = submissionError instanceof Error
+        ? submissionError.message
+        : "Failed to invite user. Please try again.";
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -75,11 +110,15 @@ export function InviteUserModal({ isOpen, onClose, onSuccess, token }: InviteUse
   const handleClose = () => {
     formRef.current?.reset();
     setError(null);
-    setSuccess(false);
+    setSuccessUsername(null);
+    setFirstName("");
+    setEmployeeId("");
     onClose();
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="invite-user-modal-overlay">
@@ -96,10 +135,12 @@ export function InviteUserModal({ isOpen, onClose, onSuccess, token }: InviteUse
           </button>
         </div>
 
-        {success && (
+        {successUsername && (
           <div className="invite-user-modal-message invite-user-modal-success">
             <span>✓</span>
-            <p>Invitation sent successfully! The user will receive an email with their invitation link.</p>
+            <p>
+              Invitation created successfully. Generated username: <strong>{successUsername}</strong>.
+            </p>
           </div>
         )}
 
@@ -112,12 +153,40 @@ export function InviteUserModal({ isOpen, onClose, onSuccess, token }: InviteUse
 
         <form ref={formRef} onSubmit={handleSubmit} className="invite-user-form">
           <div className="form-group">
-            <label htmlFor="fullName">Full Name</label>
+            <label htmlFor="employeeId">Employee ID</label>
             <input
-              id="fullName"
-              name="fullName"
+              id="employeeId"
+              name="employeeId"
               type="text"
-              placeholder="e.g. Nshuti Abdul"
+              placeholder="e.g. RRA-EDT-001"
+              disabled={isLoading}
+              onChange={(event) => setEmployeeId(event.target.value)}
+              required
+              value={employeeId}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="firstName">First Name</label>
+            <input
+              id="firstName"
+              name="firstName"
+              type="text"
+              placeholder="e.g. Abdul"
+              disabled={isLoading}
+              onChange={(event) => setFirstName(event.target.value)}
+              required
+              value={firstName}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="lastName">Last Name</label>
+            <input
+              id="lastName"
+              name="lastName"
+              type="text"
+              placeholder="e.g. Nshuti"
               disabled={isLoading}
               required
             />
@@ -129,7 +198,7 @@ export function InviteUserModal({ isOpen, onClose, onSuccess, token }: InviteUse
               id="email"
               name="email"
               type="email"
-              placeholder="e.g. nshutiblessing@rra.gov.rw"
+              placeholder="e.g. nshuti@rra.gov.rw"
               disabled={isLoading}
               required
             />
@@ -140,7 +209,6 @@ export function InviteUserModal({ isOpen, onClose, onSuccess, token }: InviteUse
             <select id="roleName" name="roleName" disabled={isLoading} required>
               <option value="">Select a role</option>
               <option value="ADMIN">Admin</option>
-              <option value="SUPER_ADMIN">Super Admin</option>
               <option value="EDITOR">Editor</option>
               <option value="PUBLISHER">Publisher</option>
               <option value="REVIEWER">Reviewer</option>
@@ -155,6 +223,44 @@ export function InviteUserModal({ isOpen, onClose, onSuccess, token }: InviteUse
               <option value="FR">Français</option>
               <option value="RW">Kinyarwanda</option>
             </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="phoneNumber">Phone Number</label>
+            <input
+              id="phoneNumber"
+              name="phoneNumber"
+              type="tel"
+              placeholder="e.g. +250788000010"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="department">Department</label>
+            <input
+              id="department"
+              name="department"
+              type="text"
+              placeholder="e.g. Content"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="position">Position</label>
+            <input
+              id="position"
+              name="position"
+              type="text"
+              placeholder="e.g. Editor"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="invite-user-username-preview">
+            <span>Generated username</span>
+            <strong>{generatedUsername || "Complete employee ID and first name to preview"}</strong>
           </div>
 
           <div className="invite-user-modal-actions">
@@ -178,7 +284,7 @@ export function InviteUserModal({ isOpen, onClose, onSuccess, token }: InviteUse
 
         <div className="invite-user-modal-footer">
           <p>
-            The user will receive an invitation email at the provided address. They'll have 24 hours to complete their profile and set their password.
+            The user will receive an invitation email with their activation link and generated username.
           </p>
         </div>
       </div>
