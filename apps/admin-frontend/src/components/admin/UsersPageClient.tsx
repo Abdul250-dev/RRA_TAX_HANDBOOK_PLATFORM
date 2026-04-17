@@ -17,7 +17,7 @@ function statusClassName(status: UserStatus) {
     return "user-status-active";
   }
 
-  if (status === "INVITED") {
+  if (status === "PENDING") {
     return "user-status-invited";
   }
 
@@ -29,7 +29,7 @@ function statusClassName(status: UserStatus) {
 }
 
 function roleClassName(roleName: string) {
-  if (roleName === "ADMIN" || roleName === "SUPER_ADMIN") {
+  if (roleName === "ADMIN") {
     return "user-role-admin";
   }
 
@@ -80,6 +80,7 @@ interface ActionMenuProps {
   onSuspend: (user: User) => void;
   onCancel: (user: User) => void;
   onResend: (user: User) => void;
+  onRestore: (user: User) => void;
 }
 
 function ActionMenu({
@@ -91,6 +92,7 @@ function ActionMenu({
   onSuspend,
   onCancel,
   onResend,
+  onRestore,
 }: ActionMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -178,8 +180,8 @@ function ActionMenu({
             </>
           )}
 
-          {/* INVITED Status Actions */}
-          {user.status === "INVITED" && (
+          {/* PENDING Status Actions */}
+          {user.status === "PENDING" && (
             <>
               <button
                 className="action-menu-item action-menu-item-success"
@@ -222,12 +224,12 @@ function ActionMenu({
             </button>
           )}
 
-          {/* REMOVED Status Actions */}
-          {user.status === "REMOVED" && (
+          {/* DEACTIVATED Status Actions */}
+          {user.status === "DEACTIVATED" && (
             <button
               className="action-menu-item action-menu-item-success"
               onClick={() => {
-                onReactivate(user);
+                onRestore(user);
                 setIsOpen(false);
               }}
               type="button"
@@ -294,9 +296,9 @@ export function UsersPageClient({
   const statusFilters = [
     { label: "All", value: "All" },
     { label: "Active", value: "ACTIVE" },
-    { label: "Invited", value: "INVITED" },
+    { label: "Pending", value: "PENDING" },
     { label: "Suspended", value: "SUSPENDED" },
-    { label: "Removed", value: "REMOVED" },
+    { label: "Deactivated", value: "DEACTIVATED" },
   ];
 
   const handleInviteSuccess = () => {
@@ -470,13 +472,13 @@ export function UsersPageClient({
 
         <article className="users-summary-card">
           <span className="users-summary-label">Invited</span>
-          <strong>{summary.invitedUsers}</strong>
+          <strong>{summary.pendingUsers}</strong>
           <p>Users awaiting invite acceptance through the invite flow.</p>
         </article>
 
         <article className="users-summary-card">
-          <span className="users-summary-label">Suspended / Removed</span>
-          <strong>{summary.suspendedUsers + summary.removedUsers}</strong>
+          <span className="users-summary-label">Suspended / Deactivated</span>
+          <strong>{summary.suspendedUsers + summary.deactivatedUsers}</strong>
           <p>Restricted accounts that can be reactivated or restored.</p>
         </article>
       </section>
@@ -549,6 +551,7 @@ export function UsersPageClient({
                       onSuspend={handleSuspendClick}
                       onCancel={handleCancelClick}
                       onResend={handleResendClick}
+                      onRestore={handleRestoreClick}
                     />
                   </td>
                 </tr>

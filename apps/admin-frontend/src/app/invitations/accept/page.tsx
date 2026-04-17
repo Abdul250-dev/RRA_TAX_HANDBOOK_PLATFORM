@@ -5,6 +5,7 @@ interface InvitePreviewResponse {
   valid: boolean;
   expired: boolean;
   fullName: string;
+  username: string | null;
   email: string;
   message: string;
 }
@@ -45,7 +46,11 @@ export default async function AcceptInvitePage({ searchParams }: AcceptInvitePag
       {fetchError ? (
         <div className="login-error" style={{ maxWidth: 420 }}>{fetchError}</div>
       ) : (
-        <InviteForm token={token} inviteeName={preview!.fullName} />
+        <InviteForm
+          token={token}
+          inviteeName={preview!.fullName}
+          username={preview!.username}
+        />
       )}
     </div>
   );

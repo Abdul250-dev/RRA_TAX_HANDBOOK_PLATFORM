@@ -61,7 +61,7 @@ export function LoginForm() {
           autoComplete="username"
           className="w-full border-0 border-b border-b-[rgba(9,21,76,0.22)] bg-transparent px-0 pb-2.5 pl-9 pt-2.5 text-[0.95rem] text-[var(--rra-blue)] outline-none placeholder:text-[rgba(9,21,76,0.46)] focus:border-b-[var(--rra-orange)]"
           onChange={(e) => setUsername(e.target.value)}
-          placeholder="Email ID"
+          placeholder="Username"
           required
           type="text"
           value={username}
