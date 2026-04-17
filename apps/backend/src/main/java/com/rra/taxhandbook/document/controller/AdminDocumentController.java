@@ -1,5 +1,6 @@
 package com.rra.taxhandbook.document.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,6 +22,7 @@ public class AdminDocumentController {
 	}
 
 	@PostMapping
+	@PreAuthorize("hasAnyRole('EDITOR','ADMIN')")
 	public ApiResponse<DocumentResponse> createDocument(@RequestBody DocumentRequest request) {
 		return documentService.createDocument(request);
 	}

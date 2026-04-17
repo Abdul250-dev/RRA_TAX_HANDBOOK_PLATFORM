@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.rra.taxhandbook.common.dto.ApiResponse;
 import com.rra.taxhandbook.audit.dto.UserActivityResponse;
 import com.rra.taxhandbook.user.dto.AcceptInviteRequest;
-import com.rra.taxhandbook.user.dto.AdminSetPasswordUserRequest;
 import com.rra.taxhandbook.user.dto.InviteUserRequest;
 import com.rra.taxhandbook.user.dto.PendingInviteResponse;
 import com.rra.taxhandbook.user.dto.UpdateUserProfileRequest;
@@ -38,7 +37,7 @@ public class UserController {
 	}
 
 	@GetMapping
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public List<UserResponse> getUsers(
 		@RequestParam(required = false) String status,
 		@RequestParam(required = false) String search
@@ -47,50 +46,62 @@ public class UserController {
 	}
 
 	@GetMapping("/invited")
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public List<PendingInviteResponse> getPendingInvites() {
 		return userService.getPendingInvites();
 	}
 
 	@GetMapping("/summary")
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public UserSummaryResponse getUserSummary() {
 		return userService.getUserSummary();
 	}
 
 	@GetMapping("/{id}")
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public UserResponse getUser(@PathVariable Long id) {
 		return userService.getUserById(id);
 	}
 
 	@GetMapping("/{id}/activity")
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','AUDITOR')")
+	@PreAuthorize("hasAnyRole('ADMIN','AUDITOR')")
 	public List<UserActivityResponse> getUserActivity(@PathVariable Long id) {
 		return userService.getUserActivity(id);
 	}
 
 	@PostMapping
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
-	public ApiResponse<UserResponse> createUser(@RequestBody UserRequest request) {
-		return userService.createUser(request);
+	@PreAuthorize("hasRole('ADMIN')")
+	public ApiResponse<UserResponse> createUser(@RequestBody UserRequest request, Authentication authentication) {
+		return userService.createUser(request, authentication.getName());
 	}
 
 	@PostMapping("/invite")
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
-	public ApiResponse<UserInviteResponse> inviteUser(@RequestBody InviteUserRequest request) {
-		return userService.inviteUser(request);
+	@PreAuthorize("hasRole('ADMIN')")
+	public ApiResponse<UserInviteResponse> inviteUser(@RequestBody InviteUserRequest request, Authentication authentication) {
+		return userService.inviteUser(request, authentication.getName());
 	}
 
 	@PostMapping("/{id}/resend-invite")
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public ApiResponse<UserInviteResponse> resendInvite(@PathVariable Long id, Authentication authentication) {
 		return userService.resendInvite(id, authentication.getName());
 	}
 
+	@PostMapping("/{id}/resend")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ApiResponse<UserInviteResponse> resendInviteAlias(@PathVariable Long id, Authentication authentication) {
+		return userService.resendInvite(id, authentication.getName());
+	}
+
 	@PostMapping("/{id}/cancel-invite")
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public ApiResponse<String> cancelInvite(@PathVariable Long id, Authentication authentication) {
+		return userService.cancelInvite(id, authentication.getName());
+	}
+
+	@PostMapping("/{id}/cancel")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ApiResponse<String> cancelInviteAlias(@PathVariable Long id, Authentication authentication) {
 		return userService.cancelInvite(id, authentication.getName());
 	}
 
@@ -99,14 +110,8 @@ public class UserController {
 		return userService.acceptInvite(request);
 	}
 
-	@PostMapping("/admin-create")
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
-	public ApiResponse<UserResponse> createUserWithPassword(@RequestBody AdminSetPasswordUserRequest request) {
-		return userService.createUserWithPassword(request);
-	}
-
 	@PostMapping("/{id}/role")
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public ApiResponse<UserResponse> updateUserRole(
 		@PathVariable Long id,
 		@RequestBody UpdateUserRoleRequest request,
@@ -116,7 +121,7 @@ public class UserController {
 	}
 
 	@PostMapping("/{id}/profile")
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public ApiResponse<UserResponse> updateUserProfile(
 		@PathVariable Long id,
 		@RequestBody UpdateUserProfileRequest request,
@@ -126,25 +131,37 @@ public class UserController {
 	}
 
 	@DeleteMapping("/{id}")
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public ApiResponse<String> removeUser(@PathVariable Long id, Authentication authentication) {
 		return userService.removeUser(id, authentication.getName());
 	}
 
+	@PostMapping("/{id}/remove")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ApiResponse<String> removeUserAlias(@PathVariable Long id, Authentication authentication) {
+		return userService.removeUser(id, authentication.getName());
+	}
+
 	@PostMapping("/{id}/suspend")
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public ApiResponse<UserResponse> suspendUser(@PathVariable Long id, Authentication authentication) {
 		return userService.suspendUser(id, authentication.getName());
 	}
 
+	@PostMapping("/{id}/deactivate")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ApiResponse<UserResponse> deactivateUserAlias(@PathVariable Long id, Authentication authentication) {
+		return userService.suspendUser(id, authentication.getName());
+	}
+
 	@PostMapping("/{id}/reactivate")
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public ApiResponse<UserResponse> reactivateUser(@PathVariable Long id, Authentication authentication) {
 		return userService.reactivateUser(id, authentication.getName());
 	}
 
 	@PostMapping("/{id}/restore")
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public ApiResponse<UserInviteResponse> restoreUser(@PathVariable Long id, Authentication authentication) {
 		return userService.restoreUser(id, authentication.getName());
 	}

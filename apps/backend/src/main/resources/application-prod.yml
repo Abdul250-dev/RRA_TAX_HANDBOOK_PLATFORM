@@ -2,3 +2,22 @@ spring:
   config:
     activate:
       on-profile: prod
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  sql:
+    init:
+      mode: never
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+app:
+  security:
+    bootstrap-admin:
+      enabled: ${BOOTSTRAP_ADMIN_ENABLED:false}
+    expose-sensitive-tokens: false

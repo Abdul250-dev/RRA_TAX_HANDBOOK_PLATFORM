@@ -3,8 +3,8 @@ package com.rra.taxhandbook.user.dto;
 public record UserSummaryResponse(
 	long totalUsers,
 	long activeUsers,
-	long invitedUsers,
+	long pendingUsers,
 	long suspendedUsers,
-	long removedUsers
+	long deactivatedUsers
 ) {
 }

@@ -1,14 +1,3 @@
-ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_locale VARCHAR(20);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS source VARCHAR(50);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS invite_token VARCHAR(255);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS invite_expires_at TIMESTAMP;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token VARCHAR(255);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_expires_at TIMESTAMP;
-
-UPDATE users SET preferred_locale = 'EN' WHERE preferred_locale IS NULL;
-UPDATE users SET source = 'LOCAL' WHERE source IS NULL;
-
 INSERT INTO employee_directory_snapshot (employee_id, full_name, email, active)
 SELECT 'RRA-001', 'Abdul Aziz', 'admin@rra.gov.rw', true
 WHERE NOT EXISTS (

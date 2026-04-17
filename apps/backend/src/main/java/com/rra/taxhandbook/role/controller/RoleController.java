@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
 
 import com.rra.taxhandbook.common.dto.ApiResponse;
 import com.rra.taxhandbook.role.dto.RoleRequest;
@@ -28,32 +29,32 @@ public class RoleController {
 	}
 
 	@GetMapping
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public List<RoleResponse> getRoles() {
 		return roleService.getRoles();
 	}
 
 	@GetMapping("/{id}")
-	@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public RoleResponse getRole(@PathVariable Long id) {
 		return roleService.getRole(id);
 	}
 
 	@PostMapping
-	@PreAuthorize("hasRole('SUPER_ADMIN')")
-	public ApiResponse<RoleResponse> createRole(@RequestBody RoleRequest request) {
-		return roleService.createRole(request);
+	@PreAuthorize("hasRole('ADMIN')")
+	public ApiResponse<RoleResponse> createRole(@RequestBody RoleRequest request, Authentication authentication) {
+		return roleService.createRole(request, authentication.getName());
 	}
 
 	@PutMapping("/{id}")
-	@PreAuthorize("hasRole('SUPER_ADMIN')")
-	public ApiResponse<RoleResponse> updateRole(@PathVariable Long id, @RequestBody RoleRequest request) {
-		return roleService.updateRole(id, request);
+	@PreAuthorize("hasRole('ADMIN')")
+	public ApiResponse<RoleResponse> updateRole(@PathVariable Long id, @RequestBody RoleRequest request, Authentication authentication) {
+		return roleService.updateRole(id, request, authentication.getName());
 	}
 
 	@DeleteMapping("/{id}")
-	@PreAuthorize("hasRole('SUPER_ADMIN')")
-	public ApiResponse<String> deleteRole(@PathVariable Long id) {
-		return roleService.deleteRole(id);
+	@PreAuthorize("hasRole('ADMIN')")
+	public ApiResponse<String> deleteRole(@PathVariable Long id, Authentication authentication) {
+		return roleService.deleteRole(id, authentication.getName());
 	}
 }

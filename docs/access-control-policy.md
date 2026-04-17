@@ -85,19 +85,9 @@ Users with this role can:
 - manage categories and operational configuration
 - access all content areas
 - override workflow steps when required
-
-### `SUPER_ADMIN`
-
-Highest-trust platform authority.
-
-Users with this role can:
-
-- perform all administrative actions
 - manage system configuration
 - manage security-sensitive settings
 - access audit oversight functions
-
-This role should be granted very sparingly.
 
 ### `AUDITOR`
 
@@ -141,7 +131,7 @@ The backend currently implements this policy as follows:
 ## Recommended Operational Notes
 
 - `PUBLIC` should remain an access profile, not a normal assigned staff role
-- `SUPER_ADMIN` should be restricted to a very small number of trusted operators
+- `ADMIN` is the highest privileged authenticated staff role in the current policy
 - `AUDITOR` should remain read-only
 - publication authority should remain separate from content creation authority
 
@@ -154,5 +144,4 @@ Approved role set:
 - `REVIEWER`
 - `PUBLISHER`
 - `ADMIN`
-- `SUPER_ADMIN`
 - `AUDITOR`

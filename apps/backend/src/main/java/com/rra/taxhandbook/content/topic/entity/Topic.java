@@ -48,6 +48,9 @@ public class Topic {
 	@Column(name = "published_at")
 	private Instant publishedAt;
 
+	@Column(name = "scheduled_publish_at")
+	private Instant scheduledPublishAt;
+
 	@Column(name = "created_at", nullable = false)
 	private Instant createdAt;
 
@@ -56,7 +59,7 @@ public class Topic {
 
 	protected Topic() {}
 
-	public Topic(Section section, TopicType topicType, ContentStatus status, Integer sortOrder, boolean featured, boolean showInNavigation, Instant publishedAt, Instant createdAt, Instant updatedAt) {
+	public Topic(Section section, TopicType topicType, ContentStatus status, Integer sortOrder, boolean featured, boolean showInNavigation, Instant publishedAt, Instant scheduledPublishAt, Instant createdAt, Instant updatedAt) {
 		this.section = section;
 		this.topicType = topicType;
 		this.status = status;
@@ -64,6 +67,7 @@ public class Topic {
 		this.featured = featured;
 		this.showInNavigation = showInNavigation;
 		this.publishedAt = publishedAt;
+		this.scheduledPublishAt = scheduledPublishAt;
 		this.createdAt = createdAt;
 		this.updatedAt = updatedAt;
 	}
@@ -76,6 +80,7 @@ public class Topic {
 	public boolean isFeatured() { return featured; }
 	public boolean isShowInNavigation() { return showInNavigation; }
 	public Instant getPublishedAt() { return publishedAt; }
+	public Instant getScheduledPublishAt() { return scheduledPublishAt; }
 	public Instant getCreatedAt() { return createdAt; }
 	public Instant getUpdatedAt() { return updatedAt; }
 
@@ -91,6 +96,15 @@ public class Topic {
 
 	public void publishNow(Instant publishedAt) {
 		this.publishedAt = publishedAt;
+		this.scheduledPublishAt = null;
+	}
+
+	public void schedulePublish(Instant scheduledPublishAt) {
+		this.scheduledPublishAt = scheduledPublishAt;
+	}
+
+	public void clearScheduledPublish() {
+		this.scheduledPublishAt = null;
 	}
 
 	public void touch(Instant updatedAt) {

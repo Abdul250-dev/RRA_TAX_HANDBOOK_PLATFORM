@@ -11,9 +11,16 @@ import type { User, UserStatus, UserSummary } from "../../types/user";
 const fallbackUsers: User[] = [
   {
     id: 1,
+    employeeId: "EMP-0001",
     userCode: "AMUK",
+    username: "aline.mukamana",
+    firstName: "Aline",
+    lastName: "Mukamana",
     fullName: "Aline Mukamana",
     email: "aline.mukamana@rra.gov.rw",
+    phoneNumber: null,
+    department: "Operations",
+    position: "Platform Administrator",
     roleName: "ADMIN",
     preferredLocale: "EN",
     source: "LOCAL",
@@ -21,9 +28,16 @@ const fallbackUsers: User[] = [
   },
   {
     id: 2,
+    employeeId: "EMP-0002",
     userCode: "JHAB",
+    username: "jean.habimana",
+    firstName: "Jean Claude",
+    lastName: "Habimana",
     fullName: "Jean Claude Habimana",
     email: "jean.habimana@rra.gov.rw",
+    phoneNumber: null,
+    department: "Content",
+    position: "Content Editor",
     roleName: "EDITOR",
     preferredLocale: "EN",
     source: "LOCAL",
@@ -31,19 +45,33 @@ const fallbackUsers: User[] = [
   },
   {
     id: 3,
+    employeeId: "EMP-0003",
     userCode: "DUWI",
+    username: "diane.uwimana",
+    firstName: "Diane",
+    lastName: "Uwimana",
     fullName: "Diane Uwimana",
     email: "diane.uwimana@rra.gov.rw",
+    phoneNumber: null,
+    department: "Review",
+    position: "Content Reviewer",
     roleName: "REVIEWER",
     preferredLocale: "FR",
     source: "LOCAL",
-    status: "INVITED",
+    status: "PENDING",
   },
   {
     id: 4,
+    employeeId: "EMP-0004",
     userCode: "ENSH",
+    username: "eric.nshimiyimana",
+    firstName: "Eric",
+    lastName: "Nshimiyimana",
     fullName: "Eric Nshimiyimana",
     email: "eric.nshimiyimana@rra.gov.rw",
+    phoneNumber: null,
+    department: "Audit",
+    position: "Audit Officer",
     roleName: "AUDITOR",
     preferredLocale: "EN",
     source: "LOCAL",
@@ -51,22 +79,29 @@ const fallbackUsers: User[] = [
   },
   {
     id: 5,
+    employeeId: "EMP-0005",
     userCode: "SKAY",
+    username: "sandrine.kayitesi",
+    firstName: "Sandrine",
+    lastName: "Kayitesi",
     fullName: "Sandrine Kayitesi",
     email: "sandrine.kayitesi@rra.gov.rw",
-    roleName: "SUPER_ADMIN",
+    phoneNumber: null,
+    department: "Publishing",
+    position: "Publishing Lead",
+    roleName: "PUBLISHER",
     preferredLocale: "RW",
     source: "LOCAL",
-    status: "REMOVED",
+    status: "DEACTIVATED",
   },
 ];
 
 const fallbackSummary: UserSummary = {
   totalUsers: fallbackUsers.length,
   activeUsers: fallbackUsers.filter((user) => user.status === "ACTIVE").length,
-  invitedUsers: fallbackUsers.filter((user) => user.status === "INVITED").length,
+  pendingUsers: fallbackUsers.filter((user) => user.status === "PENDING").length,
   suspendedUsers: fallbackUsers.filter((user) => user.status === "SUSPENDED").length,
-  removedUsers: fallbackUsers.filter((user) => user.status === "REMOVED").length,
+  deactivatedUsers: fallbackUsers.filter((user) => user.status === "DEACTIVATED").length,
 };
 
 function formatStatus(status: UserStatus) {
@@ -78,7 +113,7 @@ function statusClassName(status: UserStatus) {
     return "user-status-active";
   }
 
-  if (status === "INVITED") {
+  if (status === "PENDING") {
     return "user-status-invited";
   }
 
@@ -90,7 +125,7 @@ function statusClassName(status: UserStatus) {
 }
 
 function roleClassName(roleName: string) {
-  if (roleName === "ADMIN" || roleName === "SUPER_ADMIN") {
+  if (roleName === "ADMIN") {
     return "user-role-admin";
   }
 
@@ -119,7 +154,7 @@ function initials(name: string) {
 }
 
 function actionLabel(status: UserStatus) {
-  if (status === "INVITED") {
+  if (status === "PENDING") {
     return "Resend invite";
   }
 
@@ -127,7 +162,7 @@ function actionLabel(status: UserStatus) {
     return "Reactivate";
   }
 
-  if (status === "REMOVED") {
+  if (status === "DEACTIVATED") {
     return "Restore";
   }
 
@@ -190,14 +225,14 @@ export default async function UsersPage() {
           </article>
 
           <article className="users-summary-card">
-            <span className="users-summary-label">Invited</span>
-            <strong>{summary.invitedUsers}</strong>
+            <span className="users-summary-label">Pending</span>
+            <strong>{summary.pendingUsers}</strong>
             <p>Users awaiting invite acceptance through the invite flow.</p>
           </article>
 
           <article className="users-summary-card">
-            <span className="users-summary-label">Suspended / Removed</span>
-            <strong>{summary.suspendedUsers + summary.removedUsers}</strong>
+            <span className="users-summary-label">Suspended / Deactivated</span>
+            <strong>{summary.suspendedUsers + summary.deactivatedUsers}</strong>
             <p>Restricted accounts that can be reactivated or restored.</p>
           </article>
         </section>
@@ -211,13 +246,13 @@ export default async function UsersPage() {
               Active
             </button>
             <button className="users-filter-pill" type="button">
-              Invited
+              Pending
             </button>
             <button className="users-filter-pill" type="button">
               Suspended
             </button>
             <button className="users-filter-pill" type="button">
-              Removed
+              Deactivated
             </button>
           </div>
 
@@ -247,8 +282,8 @@ export default async function UsersPage() {
               },
               {
                 key: "userCode",
-                header: "User Code",
-                render: (row: User) => <span className="user-code-cell">{row.userCode}</span>,
+                header: "Employee ID",
+                render: (row: User) => <span className="user-code-cell">{row.employeeId}</span>,
               },
               {
                 key: "status",
