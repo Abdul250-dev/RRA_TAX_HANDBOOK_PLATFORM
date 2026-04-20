@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -14,9 +15,9 @@ export function DashboardHeroActions({ role, token }: { role?: string | null; to
   return (
     <>
       <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-        <button className="pill-button" type="button">
+        <Link className="pill-button" href="/articles/create">
           Create Content
-        </button>
+        </Link>
         {showInviteAction ? (
           <button
             className="pill-button pill-button-secondary"

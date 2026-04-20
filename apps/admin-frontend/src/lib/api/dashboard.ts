@@ -1,4 +1,5 @@
 import { apiClient } from "./axios";
+import type { ContentSummary, TopicSummary } from "./content";
 
 export interface UserSummary {
   totalUsers: number;
@@ -8,29 +9,7 @@ export interface UserSummary {
   deactivatedUsers: number;
 }
 
-export interface ContentSummary {
-  totalTopics: number;
-  draftTopics: number;
-  reviewTopics: number;
-  approvedTopics: number;
-  publishedTopics: number;
-  archivedTopics: number;
-  totalSections: number;
-  draftSections: number;
-  publishedSections: number;
-  archivedSections: number;
-}
-
-export interface TopicSummary {
-  id: number;
-  sectionId: number;
-  title: string;
-  slug: string;
-  summary: string;
-  topicType: string;
-  status: string;
-  sortOrder: number;
-}
+export type { ContentSummary, TopicSummary };
 
 export async function getUserSummary(token?: string) {
   return apiClient<UserSummary>("/api/users/summary", { token });

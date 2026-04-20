@@ -3,7 +3,7 @@ export const routes = {
   login: "/login",
   dashboard: "/dashboard",
   users: "/users",
-  content: "/articles",
+  content: "/content",
   roles: "/roles",
   auditLogs: "/audit-logs",
   settings: "/settings",
