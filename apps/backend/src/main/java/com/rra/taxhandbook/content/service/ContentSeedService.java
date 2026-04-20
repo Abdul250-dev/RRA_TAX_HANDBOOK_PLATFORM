@@ -8,6 +8,14 @@ import org.springframework.stereotype.Service;
 
 import com.rra.taxhandbook.common.enums.ContentStatus;
 import com.rra.taxhandbook.common.enums.LanguageCode;
+import com.rra.taxhandbook.content.homepage.entity.HomepageCard;
+import com.rra.taxhandbook.content.homepage.entity.HomepageCardTranslation;
+import com.rra.taxhandbook.content.homepage.entity.HomepageContent;
+import com.rra.taxhandbook.content.homepage.entity.HomepageContentTranslation;
+import com.rra.taxhandbook.content.homepage.repository.HomepageCardRepository;
+import com.rra.taxhandbook.content.homepage.repository.HomepageCardTranslationRepository;
+import com.rra.taxhandbook.content.homepage.repository.HomepageContentRepository;
+import com.rra.taxhandbook.content.homepage.repository.HomepageContentTranslationRepository;
 import com.rra.taxhandbook.content.section.entity.Section;
 import com.rra.taxhandbook.content.section.entity.SectionTranslation;
 import com.rra.taxhandbook.content.section.entity.SectionType;
@@ -33,6 +41,10 @@ public class ContentSeedService {
 	private final TopicTranslationRepository topicTranslationRepository;
 	private final TopicBlockRepository topicBlockRepository;
 	private final TopicBlockTranslationRepository topicBlockTranslationRepository;
+	private final HomepageContentRepository homepageContentRepository;
+	private final HomepageContentTranslationRepository homepageContentTranslationRepository;
+	private final HomepageCardRepository homepageCardRepository;
+	private final HomepageCardTranslationRepository homepageCardTranslationRepository;
 
 	public ContentSeedService(
 		SectionRepository sectionRepository,
@@ -40,7 +52,11 @@ public class ContentSeedService {
 		TopicRepository topicRepository,
 		TopicTranslationRepository topicTranslationRepository,
 		TopicBlockRepository topicBlockRepository,
-		TopicBlockTranslationRepository topicBlockTranslationRepository
+		TopicBlockTranslationRepository topicBlockTranslationRepository,
+		HomepageContentRepository homepageContentRepository,
+		HomepageContentTranslationRepository homepageContentTranslationRepository,
+		HomepageCardRepository homepageCardRepository,
+		HomepageCardTranslationRepository homepageCardTranslationRepository
 	) {
 		this.sectionRepository = sectionRepository;
 		this.sectionTranslationRepository = sectionTranslationRepository;
@@ -48,17 +64,27 @@ public class ContentSeedService {
 		this.topicTranslationRepository = topicTranslationRepository;
 		this.topicBlockRepository = topicBlockRepository;
 		this.topicBlockTranslationRepository = topicBlockTranslationRepository;
+		this.homepageContentRepository = homepageContentRepository;
+		this.homepageContentTranslationRepository = homepageContentTranslationRepository;
+		this.homepageCardRepository = homepageCardRepository;
+		this.homepageCardTranslationRepository = homepageCardTranslationRepository;
 	}
 
 	@Bean
 	ApplicationRunner seedContentStructure() {
 		return args -> {
 			if (sectionRepository.count() > 0 || topicRepository.count() > 0) {
+				seedHomepageForExistingContentIfMissing();
 				return;
 			}
 
 			Instant now = Instant.now();
-			Section taxes = sectionRepository.save(new Section(null, SectionType.MAIN, 1, ContentStatus.PUBLISHED, "book", true, now, now));
+			Section generalInformation = sectionRepository.save(new Section(null, SectionType.MAIN, 1, ContentStatus.PUBLISHED, "book", true, now, now));
+			seedSectionTranslation(generalInformation, LanguageCode.EN, "General Information", "general-information", "See the tax handbook introduction, purpose of the tax handbook, history of taxation and other general information.");
+			seedSectionTranslation(generalInformation, LanguageCode.FR, "Informations generales", "informations-generales", "Consultez l'introduction du guide fiscal, son objectif, l'histoire de la fiscalite et d'autres informations generales.");
+			seedSectionTranslation(generalInformation, LanguageCode.KIN, "Amakuru rusange", "amakuru-rusange", "Reba intangiriro y'igitabo cy'imisoro, intego yacyo, amateka y'imisoro n'andi makuru rusange.");
+
+			Section taxes = sectionRepository.save(new Section(null, SectionType.MAIN, 2, ContentStatus.PUBLISHED, "book", true, now, now));
 			seedSectionTranslation(taxes, LanguageCode.EN, "Taxes in Rwanda", "taxes", "Find information on the different taxes administered in Rwanda.");
 			seedSectionTranslation(taxes, LanguageCode.FR, "Taxes au Rwanda", "taxes", "Consultez les informations sur les differents impots administres au Rwanda.");
 			seedSectionTranslation(taxes, LanguageCode.KIN, "Imisoro ikoreshwa mu Rwanda", "imisoro", "Menya amakuru yerekeye imisoro itandukanye ikoreshwa mu Rwanda.");
@@ -87,7 +113,75 @@ public class ContentSeedService {
 			seedTopicBlockTranslation(obligations, LanguageCode.EN, "Obligations of VAT registered taxpayers", "Display the VAT certificate, use EIS or EBM invoices, submit declarations on time, and keep records available for RRA review.");
 			seedTopicBlockTranslation(obligations, LanguageCode.FR, "Obligations des contribuables enregistres a la TVA", "Afficher le certificat TVA, utiliser les factures EIS ou EBM, declarer dans les delais et conserver les registres.");
 			seedTopicBlockTranslation(obligations, LanguageCode.KIN, "Inshingano z'abanditse kuri VAT", "Garagaza icyemezo cya VAT, koresha inyemezabuguzi za EIS cyangwa EBM, tanga imenyekanisha ku gihe kandi ubike inyandiko.");
+
+			Section otherServices = sectionRepository.save(new Section(null, SectionType.MAIN, 3, ContentStatus.PUBLISHED, "folder", true, now, now));
+			seedSectionTranslation(otherServices, LanguageCode.EN, "Other services", "other-services", "Find information on other tax-related services offered by RRA.");
+			seedSectionTranslation(otherServices, LanguageCode.FR, "Autres services", "autres-services", "Consultez les informations sur d'autres services fiscaux proposes par la RRA.");
+			seedSectionTranslation(otherServices, LanguageCode.KIN, "Izindi serivisi", "izindi-serivisi", "Menya amakuru ku zindi serivisi zijyanye n'imisoro zitangwa na RRA.");
+
+			Section guides = sectionRepository.save(new Section(null, SectionType.MAIN, 4, ContentStatus.PUBLISHED, "folder", true, now, now));
+			seedSectionTranslation(guides, LanguageCode.EN, "User guides and examples", "guides", "Find user guides and examples to help you understand different tax types.");
+			seedSectionTranslation(guides, LanguageCode.FR, "Guides utilisateurs et exemples", "guides", "Trouvez des guides utilisateurs et des exemples pour mieux comprendre les differents types d'impots.");
+			seedSectionTranslation(guides, LanguageCode.KIN, "Ubuyobozi n'ingero", "ubuyobozi-n-ingero", "Shakamo ubuyobozi n'ingero bigufasha gusobanukirwa ubwoko butandukanye bw'imisoro.");
+
+			HomepageContent homepageContent = homepageContentRepository.save(new HomepageContent(ContentStatus.PUBLISHED, now));
+			seedHomepageTranslation(homepageContent, LanguageCode.EN, "Rwanda Revenue Authority", "Tax Handbook", "Explore the official public handbook for tax information, services, procedures, and practical guidance across Rwanda's tax system.", "Search handbook", "Get help");
+			seedHomepageTranslation(homepageContent, LanguageCode.FR, "Office Rwandais des Recettes", "Guide fiscal", "Explorez le guide public officiel pour les informations fiscales, les services, les procedures et les orientations pratiques du systeme fiscal rwandais.", "Rechercher", "Obtenir de l'aide");
+			seedHomepageTranslation(homepageContent, LanguageCode.KIN, "Ikigo cy'Igihugu cy'Imisoro n'Amahoro", "Igitabo cy'Imisoro", "Sura igitabo rusange gitanga amakuru ku misoro, serivisi, inzira n'ubuyobozi bufasha gusobanukirwa gahunda y'imisoro mu Rwanda.", "Shakisha", "Saba ubufasha");
+
+			seedHomepageCard(homepageContent, generalInformation, 1, LanguageCode.EN, "General Information", "See the tax handbook introduction, purpose of the tax handbook, history of taxation and other general information.");
+			seedHomepageCard(homepageContent, generalInformation, 1, LanguageCode.FR, "Informations generales", "Consultez l'introduction du guide fiscal, son objectif, l'histoire de la fiscalite et d'autres informations generales.");
+			seedHomepageCard(homepageContent, generalInformation, 1, LanguageCode.KIN, "Amakuru rusange", "Reba intangiriro y'igitabo cy'imisoro, intego yacyo, amateka y'imisoro n'andi makuru rusange.");
+
+			seedHomepageCard(homepageContent, taxes, 2, LanguageCode.EN, "Taxes administered in Rwanda", "Find information on different taxes, their rates, how to file and pay taxes and non-compliance penalties.");
+			seedHomepageCard(homepageContent, taxes, 2, LanguageCode.FR, "Taxes administrees au Rwanda", "Consultez les informations sur les differents impots, leurs taux, les declarations, les paiements et les penalites.");
+			seedHomepageCard(homepageContent, taxes, 2, LanguageCode.KIN, "Imisoro ikoreshwa mu Rwanda", "Menya amakuru ku misoro itandukanye, ibipimo byayo, uburyo bwo kuyitangaza, kuyishyura n'ibihano.");
+
+			seedHomepageCard(homepageContent, otherServices, 3, LanguageCode.EN, "Other services", "Find information on other tax-related services such VAT Rewards& Refund, Debt Management, Audit, Certificates offered by RRA and Motor Vehicle Services among others.");
+			seedHomepageCard(homepageContent, otherServices, 3, LanguageCode.FR, "Autres services", "Consultez les informations sur d'autres services fiscaux tels que les remboursements de TVA, la gestion des dettes, l'audit et les certificats.");
+			seedHomepageCard(homepageContent, otherServices, 3, LanguageCode.KIN, "Izindi serivisi", "Menya amakuru ku zindi serivisi zijyanye n'imisoro nko gusubizwa TVA, gucunga imyenda, igenzura n'impamyabushobozi.");
+
+			seedHomepageCard(homepageContent, guides, 4, LanguageCode.EN, "User guides and examples", "Here you will find user guides on filing different taxes and various examples to help your understanding on various tax types.");
+			seedHomepageCard(homepageContent, guides, 4, LanguageCode.FR, "Guides utilisateurs et exemples", "Vous trouverez ici des guides de declaration et divers exemples pour mieux comprendre les differents types d'impots.");
+			seedHomepageCard(homepageContent, guides, 4, LanguageCode.KIN, "Ubuyobozi n'ingero", "Aha uzasangamo ubuyobozi bwo gutanga imenyekanisha n'ingero zitandukanye zigufasha gusobanukirwa neza ubwoko bw'imisoro.");
 		};
+	}
+
+	private void seedHomepageForExistingContentIfMissing() {
+		if (homepageContentRepository.count() > 0) {
+			return;
+		}
+
+		Section generalInformation = findSectionByEnglishSlug("general-information");
+		Section taxes = findSectionByEnglishSlug("taxes");
+		Section otherServices = findSectionByEnglishSlug("other-services");
+		Section guides = findSectionByEnglishSlug("guides");
+
+		if (generalInformation == null || taxes == null || otherServices == null || guides == null) {
+			return;
+		}
+
+		Instant now = Instant.now();
+		HomepageContent homepageContent = homepageContentRepository.save(new HomepageContent(ContentStatus.PUBLISHED, now));
+		seedHomepageTranslation(homepageContent, LanguageCode.EN, "Rwanda Revenue Authority", "Tax Handbook", "Explore the official public handbook for tax information, services, procedures, and practical guidance across Rwanda's tax system.", "Search handbook", "Get help");
+		seedHomepageTranslation(homepageContent, LanguageCode.FR, "Office Rwandais des Recettes", "Guide fiscal", "Explorez le guide public officiel pour les informations fiscales, les services, les procedures et les orientations pratiques du systeme fiscal rwandais.", "Rechercher", "Obtenir de l'aide");
+		seedHomepageTranslation(homepageContent, LanguageCode.KIN, "Ikigo cy'Igihugu cy'Imisoro n'Amahoro", "Igitabo cy'Imisoro", "Sura igitabo rusange gitanga amakuru ku misoro, serivisi, inzira n'ubuyobozi bufasha gusobanukirwa gahunda y'imisoro mu Rwanda.", "Shakisha", "Saba ubufasha");
+
+		seedHomepageCard(homepageContent, generalInformation, 1, LanguageCode.EN, "General Information", "See the tax handbook introduction, purpose of the tax handbook, history of taxation and other general information.");
+		seedHomepageCard(homepageContent, generalInformation, 1, LanguageCode.FR, "Informations generales", "Consultez l'introduction du guide fiscal, son objectif, l'histoire de la fiscalite et d'autres informations generales.");
+		seedHomepageCard(homepageContent, generalInformation, 1, LanguageCode.KIN, "Amakuru rusange", "Reba intangiriro y'igitabo cy'imisoro, intego yacyo, amateka y'imisoro n'andi makuru rusange.");
+
+		seedHomepageCard(homepageContent, taxes, 2, LanguageCode.EN, "Taxes administered in Rwanda", "Find information on different taxes, their rates, how to file and pay taxes and non-compliance penalties.");
+		seedHomepageCard(homepageContent, taxes, 2, LanguageCode.FR, "Taxes administrees au Rwanda", "Consultez les informations sur les differents impots, leurs taux, les declarations, les paiements et les penalites.");
+		seedHomepageCard(homepageContent, taxes, 2, LanguageCode.KIN, "Imisoro ikoreshwa mu Rwanda", "Menya amakuru ku misoro itandukanye, ibipimo byayo, uburyo bwo kuyitangaza, kuyishyura n'ibihano.");
+
+		seedHomepageCard(homepageContent, otherServices, 3, LanguageCode.EN, "Other services", "Find information on other tax-related services such VAT Rewards& Refund, Debt Management, Audit, Certificates offered by RRA and Motor Vehicle Services among others.");
+		seedHomepageCard(homepageContent, otherServices, 3, LanguageCode.FR, "Autres services", "Consultez les informations sur d'autres services fiscaux tels que les remboursements de TVA, la gestion des dettes, l'audit et les certificats.");
+		seedHomepageCard(homepageContent, otherServices, 3, LanguageCode.KIN, "Izindi serivisi", "Menya amakuru ku zindi serivisi zijyanye n'imisoro nko gusubizwa TVA, gucunga imyenda, igenzura n'impamyabushobozi.");
+
+		seedHomepageCard(homepageContent, guides, 4, LanguageCode.EN, "User guides and examples", "Here you will find user guides on filing different taxes and various examples to help your understanding on various tax types.");
+		seedHomepageCard(homepageContent, guides, 4, LanguageCode.FR, "Guides utilisateurs et exemples", "Vous trouverez ici des guides de declaration et divers exemples pour mieux comprendre les differents types d'impots.");
+		seedHomepageCard(homepageContent, guides, 4, LanguageCode.KIN, "Ubuyobozi n'ingero", "Aha uzasangamo ubuyobozi bwo gutanga imenyekanisha n'ingero zitandukanye zigufasha gusobanukirwa neza ubwoko bw'imisoro.");
 	}
 
 	private void seedSectionTranslation(Section section, LanguageCode locale, String name, String slug, String summary) {
@@ -100,5 +194,24 @@ public class ContentSeedService {
 
 	private void seedTopicBlockTranslation(TopicBlock topicBlock, LanguageCode locale, String title, String body) {
 		topicBlockTranslationRepository.save(new TopicBlockTranslation(topicBlock, locale, title, body));
+	}
+
+	private void seedHomepageTranslation(HomepageContent homepageContent, LanguageCode locale, String kicker, String title, String subtitle, String searchLabel, String helpLabel) {
+		homepageContentTranslationRepository.save(
+			new HomepageContentTranslation(homepageContent, locale, kicker, title, subtitle, searchLabel, helpLabel)
+		);
+	}
+
+	private void seedHomepageCard(HomepageContent homepageContent, Section section, Integer sortOrder, LanguageCode locale, String title, String description) {
+		HomepageCard storedCard = homepageCardRepository
+			.findByHomepageContent_IdAndSection_Id(homepageContent.getId(), section.getId())
+			.orElseGet(() -> homepageCardRepository.save(new HomepageCard(homepageContent, section, sortOrder)));
+		homepageCardTranslationRepository.save(new HomepageCardTranslation(storedCard, locale, title, description));
+	}
+
+	private Section findSectionByEnglishSlug(String slug) {
+		return sectionTranslationRepository.findBySlugAndLocale(slug, LanguageCode.EN)
+			.map(SectionTranslation::getSection)
+			.orElse(null);
 	}
 }

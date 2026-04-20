@@ -31,18 +31,24 @@ export default async function LocaleLayout({
           <Link className="site-logo" href={`/${locale}`} aria-label="RRA Tax Handbook home">
             <img
               className="site-logo-image"
-              src="/assets/RRA_Logo_home.png"
+              src="/assets/bg_rra_logo.png"
               alt="Rwanda Revenue Authority"
             />
           </Link>
-          <span className="header-divider" aria-hidden="true" />
-          <div className="header-title">
-            <span>RRA Tax Handbook</span>
-            <small>Edition 2025</small>
+          <div className="header-copy">
+            <a
+              className="back-link"
+              href="https://www.rra.gov.rw"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span aria-hidden="true">←</span>
+              <span>Go to rra.gov.rw</span>
+            </a>
+            <div className="header-title">
+              <span>Tax Handbook-Edition 2025</span>
+            </div>
           </div>
-          <Link className="back-link" href={`/${locale}`}>
-            Back to Home
-          </Link>
         </div>
       </header>
 

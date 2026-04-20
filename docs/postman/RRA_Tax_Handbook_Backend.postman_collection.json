@@ -1043,6 +1043,90 @@
           }
         },
         {
+          "name": "Get Homepage (EN)",
+          "request": {
+            "description": "Returns the CMS-backed homepage payload with kicker, title, subtitle, searchLabel, helpLabel, updatedAt, and homepage cards for the requested locale.",
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/homepage?locale=EN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "homepage"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "EN"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Homepage (FR)",
+          "request": {
+            "description": "Returns the CMS-backed homepage payload for the French locale.",
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/homepage?locale=FR",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "homepage"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "FR"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Homepage (KIN)",
+          "request": {
+            "description": "Returns the CMS-backed homepage payload for the Kinyarwanda locale.",
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/homepage?locale=KIN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "homepage"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "KIN"
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "Get Sections (EN)",
           "request": {
             "description": "Returns public SectionSummaryResponse items with fields id, parentId, name, slug, summary, type, and sortOrder for the requested locale.",

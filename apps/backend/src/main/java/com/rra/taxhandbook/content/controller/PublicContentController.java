@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.rra.taxhandbook.common.enums.LanguageCode;
+import com.rra.taxhandbook.content.dto.HomepageResponse;
 import com.rra.taxhandbook.content.dto.PublicSectionDetailResponse;
 import com.rra.taxhandbook.content.dto.SectionSummaryResponse;
 import com.rra.taxhandbook.content.dto.TopicDetailResponse;
@@ -22,6 +23,11 @@ public class PublicContentController {
 
 	public PublicContentController(ContentStructureService contentStructureService) {
 		this.contentStructureService = contentStructureService;
+	}
+
+	@GetMapping("/homepage")
+	public HomepageResponse getHomepage(@RequestParam(defaultValue = "EN") LanguageCode locale) {
+		return contentStructureService.getHomepage(locale);
 	}
 
 	@GetMapping("/sections")
