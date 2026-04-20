@@ -109,6 +109,65 @@ class EndpointAuthorizationIntegrationTests {
 	}
 
 	@Test
+	void contentOfficerCanAccessContentSummary() throws Exception {
+		mockMvc.perform(get("/api/admin/content/summary")
+				.with(user("content.officer@rra.test").roles("CONTENT_OFFICER")))
+			.andExpect(status().isOk());
+	}
+
+	@Test
+	void viewerCanAccessContentSummary() throws Exception {
+		mockMvc.perform(get("/api/admin/content/summary")
+				.with(user("viewer@rra.test").roles("VIEWER")))
+			.andExpect(status().isOk());
+	}
+
+	@Test
+	void auditorCanAccessContentSummary() throws Exception {
+		mockMvc.perform(get("/api/admin/content/summary")
+				.with(user("auditor@rra.test").roles("AUDITOR")))
+			.andExpect(status().isOk());
+	}
+
+	@Test
+	void contentOfficerCanCreateSection() throws Exception {
+		mockMvc.perform(post("/api/admin/content/sections")
+				.with(user("content.officer@rra.test").roles("CONTENT_OFFICER"))
+				.with(csrf())
+				.contentType("application/json")
+				.content("""
+					{
+					  "type": "MAIN",
+					  "sortOrder": 77,
+					  "locale": "EN",
+					  "name": "Content Officer Section",
+					  "slug": "content-officer-section",
+					  "summary": "Section created by a content officer."
+					}
+					"""))
+			.andExpect(status().isOk());
+	}
+
+	@Test
+	void viewerCannotCreateSection() throws Exception {
+		mockMvc.perform(post("/api/admin/content/sections")
+				.with(user("viewer@rra.test").roles("VIEWER"))
+				.with(csrf())
+				.contentType("application/json")
+				.content("""
+					{
+					  "type": "MAIN",
+					  "sortOrder": 78,
+					  "locale": "EN",
+					  "name": "Viewer Section",
+					  "slug": "viewer-section",
+					  "summary": "Viewer should not be able to create this."
+					}
+					"""))
+			.andExpect(status().isForbidden());
+	}
+
+	@Test
 	void publisherCannotAccessReviewQueue() throws Exception {
 		mockMvc.perform(get("/api/admin/content/topics/review-queue")
 				.with(user("publisher@rra.test").roles("PUBLISHER")))
@@ -120,6 +179,18 @@ class EndpointAuthorizationIntegrationTests {
 		mockMvc.perform(get("/api/admin/content/topics/review-queue")
 				.with(user("reviewer@rra.test").roles("REVIEWER")))
 			.andExpect(status().isOk());
+	}
+
+	@Test
+	void viewerCanReadQueuesButCannotPublish() throws Exception {
+		mockMvc.perform(get("/api/admin/content/topics/publish-queue")
+				.with(user("viewer@rra.test").roles("VIEWER")))
+			.andExpect(status().isOk());
+
+		mockMvc.perform(post("/api/admin/content/topics/workflow/process-scheduled")
+				.with(user("viewer@rra.test").roles("VIEWER"))
+				.with(csrf()))
+			.andExpect(status().isForbidden());
 	}
 
 	@Test
