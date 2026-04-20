@@ -122,6 +122,35 @@ class PublicContentContractIntegrationTests {
 	}
 
 	@Test
+	void publicSectionDetailEndpointReturnsPublishedChildrenAndTopics() throws Exception {
+		seedPublishedTopic("public-contract-topic");
+
+		var parentSection = sectionRepository.findAll().get(0);
+		contentStructureService.createSection(
+			new AdminCreateSectionRequest(
+				parentSection.getId(),
+				SectionType.GROUP,
+				2,
+				LanguageCode.EN,
+				"Public Child Section",
+				"public-child-section",
+				"Child section summary"
+			),
+			"admin@rra.test"
+		);
+
+		mockMvc.perform(get("/api/public/sections/{slug}", "public-contract-section").queryParam("locale", "EN"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.name").value("Public Contract Section"))
+			.andExpect(jsonPath("$.slug").value("public-contract-section"))
+			.andExpect(jsonPath("$.children.length()").value(1))
+			.andExpect(jsonPath("$.children[0].name").value("Public Child Section"))
+			.andExpect(jsonPath("$.topics.length()").value(1))
+			.andExpect(jsonPath("$.topics[0].title").value("Public Contract Topic"))
+			.andExpect(jsonPath("$.topics[0].slug").value("public-contract-topic"));
+	}
+
+	@Test
 	void publicTopicEndpointReturnsNotFoundForUnpublishedTopic() throws Exception {
 		contentStructureService.createSection(
 			new AdminCreateSectionRequest(

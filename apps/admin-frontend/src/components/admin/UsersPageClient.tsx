@@ -1,11 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useRef, useEffect } from "react";
 import { MoreVertical } from "lucide-react";
-import { InviteUserModal } from "../../components/admin/InviteUserModal";
-import { DataTable } from "../../components/admin/DataTable";
+import { useEffect, useRef, useState } from "react";
+
 import { ConfirmDialog } from "../../components/admin/ConfirmDialog";
+import { DataTable } from "../../components/admin/DataTable";
+import { InviteUserModal } from "../../components/admin/InviteUserModal";
 import type { User, UserStatus, UserSummary } from "../../types/user";
 
 function formatStatus(status: UserStatus) {
@@ -58,7 +59,8 @@ function initials(name: string) {
 }
 
 function formatDate(dateString?: string) {
-  if (!dateString) return "—";
+  if (!dateString) return "--";
+
   try {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -67,7 +69,7 @@ function formatDate(dateString?: string) {
       day: "numeric",
     });
   } catch {
-    return "—";
+    return "--";
   }
 }
 
@@ -126,7 +128,6 @@ function ActionMenu({
 
       {isOpen && (
         <div className="action-menu-dropdown">
-          {/* Edit/Update - Available for all statuses */}
           <button
             className="action-menu-item"
             onClick={() => {
@@ -135,11 +136,10 @@ function ActionMenu({
             }}
             type="button"
           >
-            <span className="action-menu-icon">✎</span>
+            <span className="action-menu-icon">Edit</span>
             Edit / Update
           </button>
 
-          {/* ACTIVE Status Actions */}
           {user.status === "ACTIVE" && (
             <>
               <button
@@ -150,7 +150,7 @@ function ActionMenu({
                 }}
                 type="button"
               >
-                <span className="action-menu-icon">⊘</span>
+                <span className="action-menu-icon">Off</span>
                 Deactivate
               </button>
 
@@ -162,7 +162,7 @@ function ActionMenu({
                 }}
                 type="button"
               >
-                <span className="action-menu-icon">⫸</span>
+                <span className="action-menu-icon">Hold</span>
                 Suspend
               </button>
 
@@ -174,13 +174,12 @@ function ActionMenu({
                 }}
                 type="button"
               >
-                <span className="action-menu-icon">✕</span>
+                <span className="action-menu-icon">Del</span>
                 Remove
               </button>
             </>
           )}
 
-          {/* PENDING Status Actions */}
           {user.status === "PENDING" && (
             <>
               <button
@@ -191,7 +190,7 @@ function ActionMenu({
                 }}
                 type="button"
               >
-                <span className="action-menu-icon">↻</span>
+                <span className="action-menu-icon">Send</span>
                 Resend Invite
               </button>
 
@@ -203,13 +202,12 @@ function ActionMenu({
                 }}
                 type="button"
               >
-                <span className="action-menu-icon">✕</span>
+                <span className="action-menu-icon">Stop</span>
                 Cancel Invite
               </button>
             </>
           )}
 
-          {/* SUSPENDED Status Actions */}
           {user.status === "SUSPENDED" && (
             <button
               className="action-menu-item action-menu-item-success"
@@ -219,12 +217,11 @@ function ActionMenu({
               }}
               type="button"
             >
-              <span className="action-menu-icon">↻</span>
+              <span className="action-menu-icon">On</span>
               Reactivate
             </button>
           )}
 
-          {/* DEACTIVATED Status Actions */}
           {user.status === "DEACTIVATED" && (
             <button
               className="action-menu-item action-menu-item-success"
@@ -234,7 +231,7 @@ function ActionMenu({
               }}
               type="button"
             >
-              <span className="action-menu-icon">↻</span>
+              <span className="action-menu-icon">Back</span>
               Restore
             </button>
           )}
@@ -259,7 +256,15 @@ interface UsersPageClientProps {
   token?: string;
 }
 
-type DialogType = null | "deactivate" | "reactivate" | "remove" | "suspend" | "cancel" | "resend" | "restore";
+type DialogType =
+  | null
+  | "deactivate"
+  | "reactivate"
+  | "remove"
+  | "suspend"
+  | "cancel"
+  | "resend"
+  | "restore";
 
 export function UsersPageClient({
   summary,
@@ -283,12 +288,13 @@ export function UsersPageClient({
     isLoading: false,
   });
 
-  // Build a URL preserving status and search params, with a given page
   function pageUrl(page: number, overrideStatus?: string) {
     const p = new URLSearchParams();
     const status = overrideStatus ?? params.status;
+
     if (status && status !== "All") p.set("status", status);
     if (params.search) p.set("search", params.search);
+
     p.set("page", String(page));
     return `?${p.toString()}`;
   }
@@ -349,7 +355,7 @@ export function UsersPageClient({
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
@@ -431,6 +437,8 @@ export function UsersPageClient({
   };
 
   const dialogConfig = getDialogConfig();
+  const visibleRangeStart = users.length === 0 ? 0 : currentPage * pageSize + 1;
+  const visibleRangeEnd = currentPage * pageSize + users.length;
 
   return (
     <>
@@ -500,72 +508,89 @@ export function UsersPageClient({
           ))}
         </div>
 
-        <div className="users-table-wrapper">
-          <table className="users-table">
-            <thead>
-              <tr>
-                <th className="col-employee">Employee #</th>
-                <th className="col-name">Name</th>
-                <th className="col-email">Email</th>
-                <th className="col-role">Role</th>
-                <th className="col-status">Status</th>
-                <th className="col-date">Created At</th>
-                <th className="col-actions">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id} className="users-table-row">
-                  <td className="col-employee">
-                    <span className="employee-code">{user.userCode}</span>
-                  </td>
-                  <td className="col-name">
-                    <div className="user-info">
-                      <span className="user-avatar-badge">{initials(user.fullName)}</span>
-                      <div className="user-name">{user.fullName}</div>
-                    </div>
-                  </td>
-                  <td className="col-email">
-                    <span className="user-email-cell">{user.email}</span>
-                  </td>
-                  <td className="col-role">
-                    <span className={`user-role-pill ${roleClassName(user.roleName)}`}>
-                      {user.roleName.replace(/_/g, " ")}
-                    </span>
-                  </td>
-                  <td className="col-status">
-                    <span className={`user-status-pill ${statusClassName(user.status)}`}>
-                      {formatStatus(user.status)}
-                    </span>
-                  </td>
-                  <td className="col-date">
-                    <span className="created-date">{formatDate(user.createdAt)}</span>
-                  </td>
-                  <td className="col-actions">
-                    <ActionMenu
-                      user={user}
-                      onEdit={handleEdit}
-                      onDeactivate={handleDeactivateClick}
-                      onReactivate={handleReactivateClick}
-                      onRemove={handleRemoveClick}
-                      onSuspend={handleSuspendClick}
-                      onCancel={handleCancelClick}
-                      onResend={handleResendClick}
-                      onRestore={handleRestoreClick}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          className="users-data-table"
+          columns={[
+            {
+              key: "userCode",
+              header: "Employee #",
+              className: "whitespace-nowrap",
+              render: (user: User) => <span className="employee-code">{user.userCode}</span>,
+            },
+            {
+              key: "fullName",
+              header: "Name",
+              className: "min-w-[250px]",
+              render: (user: User) => (
+                <div className="user-info">
+                  <span className="user-avatar-badge">{initials(user.fullName)}</span>
+                  <div className="user-name">{user.fullName}</div>
+                </div>
+              ),
+            },
+            {
+              key: "email",
+              header: "Email",
+              className: "min-w-[220px]",
+              render: (user: User) => <span className="user-email-cell">{user.email}</span>,
+            },
+            {
+              key: "roleName",
+              header: "Role",
+              render: (user: User) => (
+                <span className={`user-role-pill ${roleClassName(user.roleName)}`}>
+                  {user.roleName.replace(/_/g, " ")}
+                </span>
+              ),
+            },
+            {
+              key: "status",
+              header: "Status",
+              render: (user: User) => (
+                <span className={`user-status-pill ${statusClassName(user.status)}`}>
+                  {formatStatus(user.status)}
+                </span>
+              ),
+            },
+            {
+              key: "createdAt",
+              header: "Created At",
+              className: "whitespace-nowrap",
+              render: (user: User) => <span className="created-date">{formatDate(user.createdAt)}</span>,
+            },
+            {
+              key: "actions",
+              header: "Action",
+              className: "w-[84px]",
+              render: (user: User) => (
+                <ActionMenu
+                  user={user}
+                  onEdit={handleEdit}
+                  onDeactivate={handleDeactivateClick}
+                  onReactivate={handleReactivateClick}
+                  onRemove={handleRemoveClick}
+                  onSuspend={handleSuspendClick}
+                  onCancel={handleCancelClick}
+                  onResend={handleResendClick}
+                  onRestore={handleRestoreClick}
+                />
+              ),
+            },
+          ]}
+          emptyDescription="Try another status filter or search term to find the user you need."
+          emptyMessage="No users found"
+          rows={users}
+          striped
+        />
 
-          <div className="users-table-footer">
+        <div className="users-table-footer">
           <span>
             {params.search ? (
-              <>Showing {users.length} result{users.length !== 1 ? "s" : ""} for "{params.search}"</>
+              <>
+                Showing {users.length} result{users.length !== 1 ? "s" : ""} for "{params.search}"
+              </>
             ) : (
-              <>Showing {users.length === 0 ? 0 : currentPage * pageSize + 1}–{currentPage * pageSize + users.length} results</>
+              <>Showing {visibleRangeStart}-{visibleRangeEnd} results</>
             )}
           </span>
 
@@ -577,12 +602,10 @@ export function UsersPageClient({
               }`}
               aria-disabled={currentPage === 0}
             >
-              ← Previous
+              Previous
             </a>
 
-            <span className="users-page-button users-page-button-active">
-              {currentPage + 1}
-            </span>
+            <span className="users-page-button users-page-button-active">{currentPage + 1}</span>
 
             <a
               href={hasNextPage ? pageUrl(currentPage + 1) : "#"}
@@ -591,7 +614,7 @@ export function UsersPageClient({
               }`}
               aria-disabled={!hasNextPage}
             >
-              Next →
+              Next
             </a>
           </div>
         </div>

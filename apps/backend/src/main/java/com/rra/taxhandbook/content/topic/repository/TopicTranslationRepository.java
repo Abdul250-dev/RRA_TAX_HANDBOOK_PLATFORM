@@ -30,4 +30,10 @@ public interface TopicTranslationRepository extends JpaRepository<TopicTranslati
 		order by tt.topic.updatedAt desc
 	""")
 	List<TopicTranslation> findForAdminList(@Param("locale") LanguageCode locale, @Param("status") ContentStatus status);
+
+	List<TopicTranslation> findByTopic_Section_IdAndLocaleAndTopic_StatusOrderByTopic_SortOrderAsc(
+		Long sectionId,
+		LanguageCode locale,
+		ContentStatus status
+	);
 }

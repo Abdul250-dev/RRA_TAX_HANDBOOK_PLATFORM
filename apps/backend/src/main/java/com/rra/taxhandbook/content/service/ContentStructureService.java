@@ -19,6 +19,7 @@ import com.rra.taxhandbook.content.dto.AdminUpdateSectionRequest;
 import com.rra.taxhandbook.content.dto.AdminUpdateTopicBlockRequest;
 import com.rra.taxhandbook.content.dto.AdminUpdateTopicRequest;
 import com.rra.taxhandbook.content.dto.ContentSummaryResponse;
+import com.rra.taxhandbook.content.dto.PublicSectionDetailResponse;
 import com.rra.taxhandbook.content.dto.SectionSummaryResponse;
 import com.rra.taxhandbook.content.dto.SectionWorkflowActionRequest;
 import com.rra.taxhandbook.content.dto.TopicBlockResponse;
@@ -68,16 +69,56 @@ public class ContentStructureService {
 
 	public List<SectionSummaryResponse> getSections(LanguageCode locale) {
 		return sectionTranslationRepository.findByLocaleAndSection_StatusOrderBySection_SortOrderAsc(locale, ContentStatus.PUBLISHED).stream()
-			.map(translation -> new SectionSummaryResponse(
-				translation.getSection().getId(),
-				translation.getSection().getParent() == null ? null : translation.getSection().getParent().getId(),
-				translation.getName(),
+			.map(this::toSectionSummary)
+			.toList();
+	}
+
+	public PublicSectionDetailResponse getSectionBySlug(String slug, LanguageCode locale) {
+		SectionTranslation sectionTranslation = sectionTranslationRepository
+			.findBySlugAndLocaleAndSection_Status(slug, locale, ContentStatus.PUBLISHED)
+			.orElseThrow(() -> new ResourceNotFoundException("Section not found for slug: " + slug));
+
+		List<SectionSummaryResponse> children = sectionTranslationRepository
+			.findBySection_Parent_IdAndLocaleAndSection_StatusOrderBySection_SortOrderAsc(
+				sectionTranslation.getSection().getId(),
+				locale,
+				ContentStatus.PUBLISHED
+			)
+			.stream()
+			.map(this::toSectionSummary)
+			.toList();
+
+		List<TopicSummaryResponse> topics = topicTranslationRepository
+			.findByTopic_Section_IdAndLocaleAndTopic_StatusOrderByTopic_SortOrderAsc(
+				sectionTranslation.getSection().getId(),
+				locale,
+				ContentStatus.PUBLISHED
+			)
+			.stream()
+			.map(translation -> new TopicSummaryResponse(
+				translation.getTopic().getId(),
+				translation.getTopic().getSection().getId(),
+				translation.getTitle(),
 				translation.getSlug(),
 				translation.getSummary(),
-				translation.getSection().getType().name(),
-				translation.getSection().getSortOrder()
+				translation.getTopic().getTopicType().name(),
+				translation.getTopic().getStatus().name(),
+				translation.getTopic().getSortOrder(),
+				translation.getTopic().getScheduledPublishAt()
 			))
 			.toList();
+
+		return new PublicSectionDetailResponse(
+			sectionTranslation.getSection().getId(),
+			sectionTranslation.getSection().getParent() == null ? null : sectionTranslation.getSection().getParent().getId(),
+			sectionTranslation.getName(),
+			sectionTranslation.getSlug(),
+			sectionTranslation.getSummary(),
+			sectionTranslation.getSection().getType().name(),
+			sectionTranslation.getSection().getSortOrder(),
+			children,
+			topics
+		);
 	}
 
 	public List<AdminSectionResponse> getAdminSections(LanguageCode locale) {
@@ -413,5 +454,17 @@ public class ContentStructureService {
 		if (exists) {
 			throw new IllegalArgumentException("A topic already exists for slug '" + slug + "' and locale " + locale.name());
 		}
+	}
+
+	private SectionSummaryResponse toSectionSummary(SectionTranslation translation) {
+		return new SectionSummaryResponse(
+			translation.getSection().getId(),
+			translation.getSection().getParent() == null ? null : translation.getSection().getParent().getId(),
+			translation.getName(),
+			translation.getSlug(),
+			translation.getSummary(),
+			translation.getSection().getType().name(),
+			translation.getSection().getSortOrder()
+		);
 	}
 }
