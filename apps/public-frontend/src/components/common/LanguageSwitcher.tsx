@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const languageOptions = [
-  { locale: "en", label: "English", flag: "GB" },
+  { locale: "en", label: "English", flag: "UK" },
   { locale: "rw", label: "Kinyarwanda", flag: "RW" },
   { locale: "fr", label: "Francais", flag: "FR" },
 ] as const;

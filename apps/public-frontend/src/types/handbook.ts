@@ -42,6 +42,24 @@ export interface HandbookTopicDetail {
   blocks: HandbookTopicBlock[];
 }
 
+export interface HomepageCard {
+  sectionId: number;
+  title: string;
+  slug: string;
+  description: string;
+  sortOrder: number;
+}
+
+export interface HomepageContent {
+  kicker: string;
+  title: string;
+  subtitle: string;
+  searchLabel: string;
+  helpLabel: string;
+  updatedAt: string;
+  cards: HomepageCard[];
+}
+
 export interface HandbookSectionDetail extends HandbookSectionSummary {
   children: HandbookSectionSummary[];
   topics: HandbookTopicSummary[];

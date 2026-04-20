@@ -19,12 +19,19 @@ import com.rra.taxhandbook.content.dto.AdminUpdateSectionRequest;
 import com.rra.taxhandbook.content.dto.AdminUpdateTopicBlockRequest;
 import com.rra.taxhandbook.content.dto.AdminUpdateTopicRequest;
 import com.rra.taxhandbook.content.dto.ContentSummaryResponse;
+import com.rra.taxhandbook.content.dto.HomepageCardResponse;
+import com.rra.taxhandbook.content.dto.HomepageResponse;
 import com.rra.taxhandbook.content.dto.PublicSectionDetailResponse;
 import com.rra.taxhandbook.content.dto.SectionSummaryResponse;
 import com.rra.taxhandbook.content.dto.SectionWorkflowActionRequest;
 import com.rra.taxhandbook.content.dto.TopicBlockResponse;
 import com.rra.taxhandbook.content.dto.TopicDetailResponse;
 import com.rra.taxhandbook.content.dto.TopicSummaryResponse;
+import com.rra.taxhandbook.content.homepage.entity.HomepageContent;
+import com.rra.taxhandbook.content.homepage.entity.HomepageContentTranslation;
+import com.rra.taxhandbook.content.homepage.repository.HomepageCardTranslationRepository;
+import com.rra.taxhandbook.content.homepage.repository.HomepageContentRepository;
+import com.rra.taxhandbook.content.homepage.repository.HomepageContentTranslationRepository;
 import com.rra.taxhandbook.content.section.entity.Section;
 import com.rra.taxhandbook.content.section.entity.SectionTranslation;
 import com.rra.taxhandbook.content.section.repository.SectionRepository;
@@ -47,6 +54,9 @@ public class ContentStructureService {
 	private final TopicTranslationRepository topicTranslationRepository;
 	private final TopicBlockRepository topicBlockRepository;
 	private final TopicBlockTranslationRepository topicBlockTranslationRepository;
+	private final HomepageContentRepository homepageContentRepository;
+	private final HomepageContentTranslationRepository homepageContentTranslationRepository;
+	private final HomepageCardTranslationRepository homepageCardTranslationRepository;
 	private final AuditLogService auditLogService;
 
 	public ContentStructureService(
@@ -56,6 +66,9 @@ public class ContentStructureService {
 		TopicTranslationRepository topicTranslationRepository,
 		TopicBlockRepository topicBlockRepository,
 		TopicBlockTranslationRepository topicBlockTranslationRepository,
+		HomepageContentRepository homepageContentRepository,
+		HomepageContentTranslationRepository homepageContentTranslationRepository,
+		HomepageCardTranslationRepository homepageCardTranslationRepository,
 		AuditLogService auditLogService
 	) {
 		this.sectionRepository = sectionRepository;
@@ -64,7 +77,42 @@ public class ContentStructureService {
 		this.topicTranslationRepository = topicTranslationRepository;
 		this.topicBlockRepository = topicBlockRepository;
 		this.topicBlockTranslationRepository = topicBlockTranslationRepository;
+		this.homepageContentRepository = homepageContentRepository;
+		this.homepageContentTranslationRepository = homepageContentTranslationRepository;
+		this.homepageCardTranslationRepository = homepageCardTranslationRepository;
 		this.auditLogService = auditLogService;
+	}
+
+	public HomepageResponse getHomepage(LanguageCode locale) {
+		HomepageContent homepageContent = homepageContentRepository.findFirstByStatusOrderByUpdatedAtDesc(ContentStatus.PUBLISHED)
+			.orElseThrow(() -> new ResourceNotFoundException("Published homepage content not found."));
+		HomepageContentTranslation translation = homepageContentTranslationRepository
+			.findByHomepageContent_IdAndLocale(homepageContent.getId(), locale)
+			.orElseGet(() -> homepageContentTranslationRepository
+				.findByHomepageContent_IdAndLocale(homepageContent.getId(), LanguageCode.EN)
+				.orElseThrow(() -> new ResourceNotFoundException("Homepage translation not found for locale: " + locale.name())));
+
+		List<HomepageCardResponse> cards = homepageCardTranslationRepository
+			.findByHomepageCard_HomepageContent_IdAndLocaleOrderByHomepageCard_SortOrderAsc(homepageContent.getId(), locale)
+			.stream()
+			.map(cardTranslation -> new HomepageCardResponse(
+				cardTranslation.getHomepageCard().getSection().getId(),
+				cardTranslation.getTitle(),
+				getSectionSlug(cardTranslation.getHomepageCard().getSection().getId(), locale),
+				cardTranslation.getDescription(),
+				cardTranslation.getHomepageCard().getSortOrder()
+			))
+			.toList();
+
+		return new HomepageResponse(
+			translation.getKicker(),
+			translation.getTitle(),
+			translation.getSubtitle(),
+			translation.getSearchLabel(),
+			translation.getHelpLabel(),
+			homepageContent.getUpdatedAt(),
+			cards
+		);
 	}
 
 	public List<SectionSummaryResponse> getSections(LanguageCode locale) {
@@ -466,5 +514,12 @@ public class ContentStructureService {
 			translation.getSection().getType().name(),
 			translation.getSection().getSortOrder()
 		);
+	}
+
+	private String getSectionSlug(Long sectionId, LanguageCode locale) {
+		return sectionTranslationRepository.findBySection_IdAndLocale(sectionId, locale)
+			.orElseGet(() -> sectionTranslationRepository.findBySection_IdAndLocale(sectionId, LanguageCode.EN)
+				.orElseThrow(() -> new ResourceNotFoundException("Section translation not found for section: " + sectionId)))
+			.getSlug();
 	}
 }

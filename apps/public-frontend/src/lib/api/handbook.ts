@@ -1,4 +1,5 @@
 import type {
+  HomepageContent,
   HandbookSectionDetail,
   HandbookSectionSummary,
   HandbookTopicDetail,
@@ -39,6 +40,12 @@ async function fetchJson<T>(path: string): Promise<T> {
 export async function getHandbookSections(locale: string) {
   return fetchJson<HandbookSectionSummary[]>(
     `/api/public/sections?locale=${toBackendLocale(locale)}`,
+  );
+}
+
+export async function getHomepageContent(locale: string) {
+  return fetchJson<HomepageContent>(
+    `/api/public/homepage?locale=${toBackendLocale(locale)}`,
   );
 }
 
