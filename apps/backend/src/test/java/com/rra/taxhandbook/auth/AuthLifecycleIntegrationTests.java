@@ -14,6 +14,8 @@ import java.time.Instant;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -325,6 +327,48 @@ class AuthLifecycleIntegrationTests {
 
 		assertEquals("loglocallogin1", response.username());
 		assertEquals("ADMIN", response.role());
+		assertNotNull(response.token());
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "ADMIN", "EDITOR", "REVIEWER", "PUBLISHER", "AUDITOR", "CONTENT_OFFICER", "VIEWER" })
+	void loginSucceedsForActiveUserWithAssignedRole(String roleName) {
+		Role role = roleRepository.findByName(roleName)
+			.orElseGet(() -> roleRepository.save(new Role(roleName, roleName + " test role")));
+		String username = roleName.toLowerCase().replace("_", "") + "login";
+		userRepository.save(new User(
+			"LOCAL-ROLE-" + roleName,
+			roleName,
+			"User",
+			roleName.toLowerCase() + "@rra.test",
+			username,
+			passwordEncoder.encode("CurrentPass!123"),
+			LanguageCode.EN,
+			UserSource.LOCAL,
+			"ACTIVE",
+			true,
+			false,
+			0,
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			Instant.now(),
+			null,
+			null,
+			null,
+			null,
+			role
+		));
+
+		var response = authService.login(new LoginRequest(username, "CurrentPass!123"));
+
+		assertEquals(username, response.username());
+		assertEquals(roleName, response.role());
 		assertNotNull(response.token());
 	}
 

@@ -37,20 +37,13 @@ public class DataInitializer implements CommandLineRunner {
 	}
 
 	private void initializeRoles() {
-		if (!roleRepository.existsByName("ADMIN")) {
-			Role adminRole = new Role("ADMIN", "Administrator role with full access");
-			roleRepository.save(adminRole);
-		}
+		seedRole("ADMIN", "Administrator role with full access");
+		seedRole("CONTENT_OFFICER", "Content officer role");
+		seedRole("VIEWER", "Viewer role with read-only access");
+	}
 
-		if (!roleRepository.existsByName("CONTENT_OFFICER")) {
-			Role contentOfficerRole = new Role("CONTENT_OFFICER", "Content officer role");
-			roleRepository.save(contentOfficerRole);
-		}
-
-		if (!roleRepository.existsByName("VIEWER")) {
-			Role viewerRole = new Role("VIEWER", "Viewer role with read-only access");
-			roleRepository.save(viewerRole);
-		}
+	private void seedRole(String name, String description) {
+		roleRepository.findByName(name).orElseGet(() -> roleRepository.save(new Role(name, description)));
 	}
 
 	private void initializeAdminUser() {
