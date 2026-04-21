@@ -49,4 +49,9 @@ public class HomepageCardTranslation {
 	public LanguageCode getLocale() { return locale; }
 	public String getTitle() { return title; }
 	public String getDescription() { return description; }
+
+	public void update(String title, String description) {
+		this.title = title;
+		this.description = description;
+	}
 }

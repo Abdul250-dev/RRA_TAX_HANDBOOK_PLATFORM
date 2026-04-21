@@ -5,14 +5,17 @@ import { ContentPageClient } from "../../components/admin/ContentPageClient";
 import { AdminLayout } from "../../components/layout/AdminLayout";
 import { AUTH_ROLE_COOKIE, AUTH_TOKEN_COOKIE } from "../../lib/api/auth";
 import {
+  getAdminHomepage,
   getAdminContentSummary,
-  getAdminPublishQueue,
-  getAdminReviewQueue,
+  getAdminPublishQueueDetails,
+  getAdminReviewQueueDetails,
   getAdminSections,
   getAdminTopics,
   type AdminSection,
   type ContentSummary,
+  type AdminHomepageContent,
   type LocaleCode,
+  type TopicDetail,
   type TopicSummary,
 } from "../../lib/api/content";
 import { canViewContent } from "../../lib/authz";
@@ -39,7 +42,17 @@ async function safeRead<T>(request: Promise<T>, fallback: T) {
 }
 
 async function getContentData(token: string, role: string | null, locale: LocaleCode, status?: string) {
-  const [summary, sections, topics] = await Promise.all([
+  const [homepage, summary, sections, topics] = await Promise.all([
+    safeRead(getAdminHomepage(token, locale), {
+      kicker: "",
+      title: "",
+      subtitle: "",
+      searchLabel: "",
+      helpLabel: "",
+      status: "DRAFT",
+      updatedAt: null,
+      cards: [],
+    } as AdminHomepageContent),
     safeRead(getAdminContentSummary(token), fallbackContentSummary),
     safeRead(getAdminSections(token, locale), [] as AdminSection[]),
     safeRead(getAdminTopics(token, locale, status), [] as TopicSummary[]),
@@ -47,15 +60,15 @@ async function getContentData(token: string, role: string | null, locale: Locale
 
   const reviewQueue =
     role === "ADMIN" || role === "REVIEWER" || role === "AUDITOR" || role === "VIEWER"
-      ? await safeRead(getAdminReviewQueue(token, locale), [] as TopicSummary[])
-      : topics.filter((topic) => topic.status === "REVIEW");
+      ? await safeRead(getAdminReviewQueueDetails(token, locale), [] as TopicDetail[])
+      : ([] as TopicDetail[]);
 
   const publishQueue =
     role === "ADMIN" || role === "PUBLISHER" || role === "AUDITOR" || role === "VIEWER"
-      ? await safeRead(getAdminPublishQueue(token, locale), [] as TopicSummary[])
-      : topics.filter((topic) => topic.status === "APPROVED");
+      ? await safeRead(getAdminPublishQueueDetails(token, locale), [] as TopicDetail[])
+      : ([] as TopicDetail[]);
 
-  return { publishQueue, reviewQueue, sections, summary, topics };
+  return { homepage, publishQueue, reviewQueue, sections, summary, topics };
 }
 
 interface ContentPageProps {

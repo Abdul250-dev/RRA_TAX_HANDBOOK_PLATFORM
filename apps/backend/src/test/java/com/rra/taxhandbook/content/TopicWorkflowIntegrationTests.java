@@ -30,6 +30,10 @@ import com.rra.taxhandbook.content.dto.SectionWorkflowActionRequest;
 import com.rra.taxhandbook.content.dto.TopicDetailResponse;
 import com.rra.taxhandbook.content.dto.TopicWorkflowActionRequest;
 import com.rra.taxhandbook.content.dto.TopicWorkflowResponse;
+import com.rra.taxhandbook.content.homepage.repository.HomepageCardRepository;
+import com.rra.taxhandbook.content.homepage.repository.HomepageCardTranslationRepository;
+import com.rra.taxhandbook.content.homepage.repository.HomepageContentRepository;
+import com.rra.taxhandbook.content.homepage.repository.HomepageContentTranslationRepository;
 import com.rra.taxhandbook.content.section.entity.Section;
 import com.rra.taxhandbook.content.section.entity.SectionType;
 import com.rra.taxhandbook.content.section.repository.SectionRepository;
@@ -43,6 +47,7 @@ import com.rra.taxhandbook.content.topicblock.entity.TopicBlock;
 import com.rra.taxhandbook.content.topicblock.entity.TopicBlockType;
 import com.rra.taxhandbook.content.topicblock.repository.TopicBlockRepository;
 import com.rra.taxhandbook.content.topicblock.repository.TopicBlockTranslationRepository;
+import com.rra.taxhandbook.content.workflow.TopicWorkflowHistoryRepository;
 import com.rra.taxhandbook.content.workflow.TopicWorkflowService;
 
 @SpringBootTest
@@ -73,8 +78,28 @@ class TopicWorkflowIntegrationTests {
 	@Autowired
 	private SectionRepository sectionRepository;
 
+	@Autowired
+	private HomepageCardTranslationRepository homepageCardTranslationRepository;
+
+	@Autowired
+	private HomepageCardRepository homepageCardRepository;
+
+	@Autowired
+	private HomepageContentTranslationRepository homepageContentTranslationRepository;
+
+	@Autowired
+	private HomepageContentRepository homepageContentRepository;
+
+	@Autowired
+	private TopicWorkflowHistoryRepository topicWorkflowHistoryRepository;
+
 	@BeforeEach
 	void setUp() {
+		homepageCardTranslationRepository.deleteAll();
+		homepageCardRepository.deleteAll();
+		homepageContentTranslationRepository.deleteAll();
+		homepageContentRepository.deleteAll();
+		topicWorkflowHistoryRepository.deleteAll();
 		topicBlockTranslationRepository.deleteAll();
 		topicBlockRepository.deleteAll();
 		topicTranslationRepository.deleteAll();
@@ -155,13 +180,42 @@ class TopicWorkflowIntegrationTests {
 
 		var response = topicWorkflowService.transitionTopic(
 			topic.getId(),
-			new TopicWorkflowActionRequest("REQUEST_CHANGES"),
+			new TopicWorkflowActionRequest("REQUEST_CHANGES", null, "Clarify the filing steps before approval."),
 			authentication("reviewer@rra.test", "REVIEWER")
 		);
 
 		assertEquals("DRAFT", response.data().status());
+		assertEquals("Clarify the filing steps before approval.", response.data().comment());
 		Topic savedTopic = topicRepository.findById(topic.getId()).orElseThrow();
 		assertEquals(ContentStatus.DRAFT, savedTopic.getStatus());
+		var history = topicWorkflowService.getWorkflowHistory(topic.getId());
+		assertEquals("REQUEST_CHANGES", history.get(0).action());
+		assertEquals("REVIEW", history.get(0).fromStatus());
+		assertEquals("DRAFT", history.get(0).toStatus());
+		assertEquals("Clarify the filing steps before approval.", history.get(0).comment());
+	}
+
+	@Test
+	void requestChangesRequiresComment() {
+		var topic = createDraftTopic("request-changes-comment-required");
+		createBlock(topic, ContentStatus.DRAFT);
+
+		topicWorkflowService.transitionTopic(
+			topic.getId(),
+			new TopicWorkflowActionRequest("SUBMIT_FOR_REVIEW"),
+			authentication("editor@rra.test", "EDITOR")
+		);
+
+		var exception = assertThrows(
+			IllegalArgumentException.class,
+			() -> topicWorkflowService.transitionTopic(
+				topic.getId(),
+				new TopicWorkflowActionRequest("REQUEST_CHANGES"),
+				authentication("reviewer@rra.test", "REVIEWER")
+			)
+		);
+
+		assertEquals("A comment is required when requesting changes so editors know what to fix.", exception.getMessage());
 	}
 
 	@Test
@@ -226,11 +280,14 @@ class TopicWorkflowIntegrationTests {
 			)
 		);
 
-		assertEquals("Topic must contain at least one content block before it can be published.", exception.getMessage());
+		assertEquals(
+			"Topic is not ready to publish: Topic must contain at least one content block.",
+			exception.getMessage()
+		);
 	}
 
 	@Test
-	void reviewerCannotRequestChangesAfterApproval() {
+	void reviewerCanRequestChangesAfterApproval() {
 		var topic = createDraftTopic("request-after-approval");
 
 		topicWorkflowService.transitionTopic(
@@ -244,16 +301,14 @@ class TopicWorkflowIntegrationTests {
 			authentication("reviewer@rra.test", "REVIEWER")
 		);
 
-		var exception = assertThrows(
-			IllegalArgumentException.class,
-			() -> topicWorkflowService.transitionTopic(
-				topic.getId(),
-				new TopicWorkflowActionRequest("REQUEST_CHANGES"),
-				authentication("reviewer@rra.test", "REVIEWER")
-			)
+		var response = topicWorkflowService.transitionTopic(
+			topic.getId(),
+			new TopicWorkflowActionRequest("REQUEST_CHANGES", null, "Resolve publish readiness issues before release."),
+			authentication("reviewer@rra.test", "REVIEWER")
 		);
 
-		assertTrue(exception.getMessage().contains("APPROVED"));
+		assertEquals("DRAFT", response.data().status());
+		assertEquals(ContentStatus.DRAFT, topicRepository.findById(topic.getId()).orElseThrow().getStatus());
 	}
 
 	@Test

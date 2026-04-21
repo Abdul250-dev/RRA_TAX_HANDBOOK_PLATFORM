@@ -3,6 +3,7 @@ import type {
   HandbookSectionDetail,
   HandbookSectionSummary,
   HandbookTopicDetail,
+  HandbookTopicSummary,
 } from "../../types/handbook";
 
 const API_BASE_URL =
@@ -58,5 +59,17 @@ export async function getHandbookSectionBySlug(locale: string, slug: string) {
 export async function getHandbookTopicBySlug(locale: string, slug: string) {
   return fetchJson<HandbookTopicDetail>(
     `/api/public/topics/${encodeURIComponent(slug)}?locale=${toBackendLocale(locale)}`,
+  );
+}
+
+export async function getPublicGuides(locale: string) {
+  return fetchJson<HandbookTopicSummary[]>(
+    `/api/public/guides?locale=${toBackendLocale(locale)}`,
+  );
+}
+
+export async function getPublicGuideBySlug(locale: string, slug: string) {
+  return fetchJson<HandbookTopicDetail>(
+    `/api/public/guides/${encodeURIComponent(slug)}?locale=${toBackendLocale(locale)}`,
   );
 }

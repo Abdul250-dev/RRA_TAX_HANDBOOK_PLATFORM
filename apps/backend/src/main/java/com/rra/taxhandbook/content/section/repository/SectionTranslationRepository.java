@@ -18,6 +18,7 @@ public interface SectionTranslationRepository extends JpaRepository<SectionTrans
 		com.rra.taxhandbook.common.enums.ContentStatus status
 	);
 	Optional<SectionTranslation> findBySlugAndLocale(String slug, LanguageCode locale);
+	Optional<SectionTranslation> findFirstByNameIgnoreCaseAndLocale(String name, LanguageCode locale);
 	Optional<SectionTranslation> findBySlugAndLocaleAndSection_Status(
 		String slug,
 		LanguageCode locale,

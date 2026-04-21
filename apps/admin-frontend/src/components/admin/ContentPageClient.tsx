@@ -22,25 +22,29 @@ import {
   createAdminTopicBlock,
   processScheduledPublishes,
   transitionAdminTopic,
+  updateAdminHomepage,
   type AdminSection,
+  type AdminHomepageContent,
   type ContentSummary,
   type LocaleCode,
+  type TopicDetail,
   type TopicSummary,
   type TopicWorkflowAction,
 } from "../../lib/api/content";
 import { canCreateContent, canPublishContent, canReviewContent } from "../../lib/authz";
 
-type ContentTab = "topics" | "sections" | "queues" | "roles";
+type ContentTab = "topics" | "sections" | "homepage" | "queues" | "roles";
 
 interface ContentPageClientProps {
+  homepage: AdminHomepageContent;
   locale: LocaleCode;
   params: {
     search?: string;
     status?: string;
     tab?: string;
   };
-  publishQueue: TopicSummary[];
-  reviewQueue: TopicSummary[];
+  publishQueue: TopicDetail[];
+  reviewQueue: TopicDetail[];
   role?: string | null;
   sections: AdminSection[];
   summary: ContentSummary;
@@ -135,7 +139,15 @@ function actionLabel(action: TopicWorkflowAction) {
     .join(" ");
 }
 
+function renderParagraphs(value?: string | null) {
+  const lines = value?.split("\n").map((line) => line.trim()).filter(Boolean) ?? [];
+  if (lines.length === 0) return <p className="metric-muted">No content provided.</p>;
+
+  return lines.map((line, index) => <p key={`${line.slice(0, 24)}-${index}`}>{line}</p>);
+}
+
 export function ContentPageClient({
+  homepage,
   locale,
   params,
   publishQueue,
@@ -150,6 +162,7 @@ export function ContentPageClient({
   const [activeTab, setActiveTab] = useState<ContentTab>((params.tab as ContentTab) || "topics");
   const [message, setMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+  const [detailTopic, setDetailTopic] = useState<TopicDetail | null>(null);
   const [scheduleByTopic, setScheduleByTopic] = useState<Record<number, string>>({});
   const [blockTopicId, setBlockTopicId] = useState<number | null>(null);
   const [blockForm, setBlockForm] = useState({ title: "", body: "" });
@@ -171,6 +184,27 @@ export function ContentPageClient({
     sortOrder: "1",
     firstBlockTitle: "",
     firstBlockBody: "",
+  });
+  const [homepageForm, setHomepageForm] = useState({
+    kicker: homepage.kicker,
+    title: homepage.title,
+    subtitle: homepage.subtitle,
+    searchLabel: homepage.searchLabel,
+    helpLabel: homepage.helpLabel,
+    cards:
+      homepage.cards.length > 0
+        ? homepage.cards.map((card) => ({
+            sectionId: String(card.sectionId),
+            sortOrder: String(card.sortOrder),
+            title: card.title,
+            description: card.description,
+          }))
+        : Array.from({ length: 4 }, (_, index) => ({
+            sectionId: sections[index]?.id ? String(sections[index].id) : "",
+            sortOrder: String(index + 1),
+            title: "",
+            description: "",
+          })),
   });
 
   const canCreate = canCreateContent(role);
@@ -318,6 +352,34 @@ export function ContentPageClient({
     }
   }
 
+  async function handleUpdateHomepage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsBusy(true);
+    setMessage(null);
+    try {
+      await updateAdminHomepage(token, {
+        locale,
+        kicker: homepageForm.kicker,
+        title: homepageForm.title,
+        subtitle: homepageForm.subtitle,
+        searchLabel: homepageForm.searchLabel,
+        helpLabel: homepageForm.helpLabel,
+        cards: homepageForm.cards.map((card, index) => ({
+          sectionId: Number(card.sectionId),
+          sortOrder: Number(card.sortOrder || index + 1),
+          title: card.title,
+          description: card.description,
+        })),
+      });
+      setMessage({ tone: "success", text: "Homepage content updated." });
+      router.refresh();
+    } catch (error) {
+      setMessage({ tone: "error", text: error instanceof Error ? error.message : "Could not update homepage." });
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
   const summaryCards = [
     { label: "Draft", value: summary.draftTopics, helper: "Editable topics", icon: FilePlus2 },
     { label: "Review", value: summary.reviewTopics, helper: "Waiting for quality checks", icon: CheckCircle2 },
@@ -370,7 +432,7 @@ export function ContentPageClient({
 
       <section className="content-control-panel">
         <div className="content-tabs" role="tablist" aria-label="Content workspace tabs">
-          {(["topics", "sections", "queues", "roles"] as ContentTab[]).map((tab) => (
+          {(["topics", "sections", "homepage", "queues", "roles"] as ContentTab[]).map((tab) => (
             <button
               className={`content-tab ${activeTab === tab ? "content-tab-active" : ""}`}
               key={tab}
@@ -683,10 +745,171 @@ export function ContentPageClient({
         </section>
       ) : null}
 
+      {activeTab === "homepage" ? (
+        <section className="content-form-grid">
+          <form className="content-form-card" onSubmit={handleUpdateHomepage}>
+            <div className="content-form-title">
+              <FolderPlus size={20} aria-hidden="true" />
+              <h2>Homepage Content</h2>
+            </div>
+            <div className="queue-meta">
+              <span>Status {homepage.status}</span>
+              <span>
+                Updated{" "}
+                {homepage.updatedAt ? new Date(homepage.updatedAt).toLocaleString() : "Not published yet"}
+              </span>
+            </div>
+            <label>
+              <span>Kicker</span>
+              <input
+                required
+                value={homepageForm.kicker}
+                onChange={(event) => setHomepageForm((current) => ({ ...current, kicker: event.target.value }))}
+              />
+            </label>
+            <label>
+              <span>Title</span>
+              <input
+                required
+                value={homepageForm.title}
+                onChange={(event) => setHomepageForm((current) => ({ ...current, title: event.target.value }))}
+              />
+            </label>
+            <label>
+              <span>Subtitle</span>
+              <textarea
+                required
+                rows={3}
+                value={homepageForm.subtitle}
+                onChange={(event) => setHomepageForm((current) => ({ ...current, subtitle: event.target.value }))}
+              />
+            </label>
+            <div className="content-form-row">
+              <label>
+                <span>Search label</span>
+                <input
+                  required
+                  value={homepageForm.searchLabel}
+                  onChange={(event) => setHomepageForm((current) => ({ ...current, searchLabel: event.target.value }))}
+                />
+              </label>
+              <label>
+                <span>Help label</span>
+                <input
+                  required
+                  value={homepageForm.helpLabel}
+                  onChange={(event) => setHomepageForm((current) => ({ ...current, helpLabel: event.target.value }))}
+                />
+              </label>
+            </div>
+
+            {homepageForm.cards.map((card, index) => (
+              <div className="content-form-card content-form-card-nested" key={`homepage-card-${index}`}>
+                <div className="content-form-title">
+                  <FilePlus2 size={18} aria-hidden="true" />
+                  <h2>Homepage Card {index + 1}</h2>
+                </div>
+                <div className="content-form-row">
+                  <label>
+                    <span>Section</span>
+                    <select
+                      required
+                      value={card.sectionId}
+                      onChange={(event) =>
+                        setHomepageForm((current) => ({
+                          ...current,
+                          cards: current.cards.map((item, itemIndex) =>
+                            itemIndex === index ? { ...item, sectionId: event.target.value } : item,
+                          ),
+                        }))
+                      }
+                    >
+                      <option value="">Select a section</option>
+                      {sections.map((section) => (
+                        <option key={section.id} value={section.id}>
+                          {section.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Sort</span>
+                    <input
+                      min="1"
+                      type="number"
+                      value={card.sortOrder}
+                      onChange={(event) =>
+                        setHomepageForm((current) => ({
+                          ...current,
+                          cards: current.cards.map((item, itemIndex) =>
+                            itemIndex === index ? { ...item, sortOrder: event.target.value } : item,
+                          ),
+                        }))
+                      }
+                    />
+                  </label>
+                </div>
+                <label>
+                  <span>Title</span>
+                  <input
+                    required
+                    value={card.title}
+                    onChange={(event) =>
+                      setHomepageForm((current) => ({
+                        ...current,
+                        cards: current.cards.map((item, itemIndex) =>
+                          itemIndex === index ? { ...item, title: event.target.value } : item,
+                        ),
+                      }))
+                    }
+                  />
+                </label>
+                <label>
+                  <span>Description</span>
+                  <textarea
+                    required
+                    rows={3}
+                    value={card.description}
+                    onChange={(event) =>
+                      setHomepageForm((current) => ({
+                        ...current,
+                        cards: current.cards.map((item, itemIndex) =>
+                          itemIndex === index ? { ...item, description: event.target.value } : item,
+                        ),
+                      }))
+                    }
+                  />
+                </label>
+              </div>
+            ))}
+
+            <button className="pill-button" disabled={isBusy} type="submit">
+              Save Homepage
+            </button>
+          </form>
+        </section>
+      ) : null}
+
       {activeTab === "queues" ? (
         <div className="content-queue-grid">
-          <QueuePanel items={reviewQueue} title="Review Queue" canAct={canReview} onAction={runAction} busy={isBusy} role={role} />
-          <QueuePanel items={publishQueue} title="Ready To Publish" canAct={canPublish} onAction={runAction} busy={isBusy} role={role} />
+          <QueuePanel
+            items={reviewQueue}
+            title="Review Queue"
+            canAct={canReview}
+            onAction={runAction}
+            onView={setDetailTopic}
+            busy={isBusy}
+            role={role}
+          />
+          <QueuePanel
+            items={publishQueue}
+            title="Ready To Publish"
+            canAct={canPublish}
+            onAction={runAction}
+            onView={setDetailTopic}
+            busy={isBusy}
+            role={role}
+          />
         </div>
       ) : null}
 
@@ -737,6 +960,82 @@ export function ContentPageClient({
           </div>
         </div>
       ) : null}
+
+      {detailTopic ? (
+        <div className="dialog-overlay">
+          <div className="dialog-container">
+            <article className="dialog-content topic-detail-dialog">
+              <div className="topic-detail-heading">
+                <div>
+                  <p className="topic-detail-kicker">Workflow read-through</p>
+                  <h2 className="dialog-title">{detailTopic.title}</h2>
+                </div>
+                <span className={`status-badge ${statusClassName(detailTopic.status)}`}>{detailTopic.status}</span>
+              </div>
+
+              <div className="queue-meta">
+                <span>{detailTopic.topicType}</span>
+                <span>{detailTopic.slug}</span>
+                <span>Section #{detailTopic.sectionId}</span>
+                <span>
+                  Updated{" "}
+                  {detailTopic.lastUpdated ? new Date(detailTopic.lastUpdated).toLocaleString() : "not yet"}
+                </span>
+              </div>
+
+              <section className="topic-detail-section">
+                <h3>Summary</h3>
+                {renderParagraphs(detailTopic.summary)}
+              </section>
+
+              <section className="topic-detail-section">
+                <h3>Introduction</h3>
+                {renderParagraphs(detailTopic.introText)}
+              </section>
+
+              <section className="topic-detail-section">
+                <h3>Content Blocks</h3>
+                {detailTopic.blocks.length > 0 ? (
+                  <div className="topic-block-list">
+                    {detailTopic.blocks.map((block) => (
+                      <article className="topic-block-preview" key={block.id}>
+                        <div className="queue-head">
+                          <strong>{block.title}</strong>
+                          <span>{block.blockType}</span>
+                        </div>
+                        <div className="queue-meta">
+                          <span>{block.anchorKey}</span>
+                          <span>Sort {block.sortOrder}</span>
+                        </div>
+                        <div className="topic-block-body">{renderParagraphs(block.body)}</div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="metric-muted">No blocks have been added yet.</p>
+                )}
+              </section>
+
+              {detailTopic.relatedGuides.length > 0 ? (
+                <section className="topic-detail-section">
+                  <h3>Related Guides</h3>
+                  <div className="topic-related-list">
+                    {detailTopic.relatedGuides.map((guide) => (
+                      <span key={guide.id}>{guide.title}</span>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              <div className="dialog-actions">
+                <button className="dialog-button dialog-button-secondary" onClick={() => setDetailTopic(null)} type="button">
+                  Close
+                </button>
+              </div>
+            </article>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
@@ -745,13 +1044,15 @@ function QueuePanel({
   busy,
   items,
   onAction,
+  onView,
   role,
   title,
 }: {
   busy: boolean;
   canAct: boolean;
-  items: TopicSummary[];
+  items: TopicDetail[];
   onAction: (topic: TopicSummary, action: TopicWorkflowAction) => void;
+  onView: (topic: TopicDetail) => void;
   role?: string | null;
   title: string;
 }) {
@@ -777,6 +1078,10 @@ function QueuePanel({
             </div>
             <p className="metric-muted">{item.summary}</p>
             <div className="content-action-stack content-action-row">
+              <button className="content-icon-action" onClick={() => onView(item)} type="button">
+                <FilePlus2 size={16} aria-hidden="true" />
+                Read Content
+              </button>
               {permittedActions(role, item.status).map((action) =>
                 action === "SCHEDULE_PUBLISH" ? null : (
                   <button

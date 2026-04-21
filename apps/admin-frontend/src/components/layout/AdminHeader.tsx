@@ -184,6 +184,7 @@ export function AdminHeader() {
               height={36}
               priority
               src="/assets/bg_rra_logo.png"
+              style={{ height: "auto", width: "auto" }}
               width={36}
             />
           </div>

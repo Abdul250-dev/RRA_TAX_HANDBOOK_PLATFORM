@@ -38,4 +38,12 @@ public class HomepageContent {
 	public Long getId() { return id; }
 	public ContentStatus getStatus() { return status; }
 	public Instant getUpdatedAt() { return updatedAt; }
+
+	public void changeStatus(ContentStatus status) {
+		this.status = status;
+	}
+
+	public void touch(Instant updatedAt) {
+		this.updatedAt = updatedAt;
+	}
 }

@@ -17,6 +17,8 @@ import com.rra.taxhandbook.common.enums.ContentStatus;
 import com.rra.taxhandbook.content.dto.AdminCreateSectionRequest;
 import com.rra.taxhandbook.content.dto.AdminCreateTopicBlockRequest;
 import com.rra.taxhandbook.content.dto.AdminCreateTopicRequest;
+import com.rra.taxhandbook.content.dto.AdminHomepageRequest;
+import com.rra.taxhandbook.content.dto.AdminHomepageResponse;
 import com.rra.taxhandbook.content.dto.AdminSectionResponse;
 import com.rra.taxhandbook.content.dto.AdminUpdateSectionRequest;
 import com.rra.taxhandbook.content.dto.AdminUpdateTopicBlockRequest;
@@ -27,8 +29,10 @@ import com.rra.taxhandbook.content.dto.ScheduledPublishProcessingResponse;
 import com.rra.taxhandbook.content.dto.SectionWorkflowActionRequest;
 import com.rra.taxhandbook.content.dto.TopicBlockResponse;
 import com.rra.taxhandbook.content.dto.TopicDetailResponse;
+import com.rra.taxhandbook.content.dto.TopicPublishReadinessResponse;
 import com.rra.taxhandbook.content.dto.TopicSummaryResponse;
 import com.rra.taxhandbook.content.dto.TopicWorkflowActionRequest;
+import com.rra.taxhandbook.content.dto.TopicWorkflowHistoryResponse;
 import com.rra.taxhandbook.content.dto.TopicWorkflowResponse;
 import com.rra.taxhandbook.content.service.ContentStructureService;
 import com.rra.taxhandbook.content.workflow.TopicWorkflowService;
@@ -57,6 +61,12 @@ public class AdminContentController {
 		return contentStructureService.getContentSummary();
 	}
 
+	@GetMapping("/homepage")
+	@PreAuthorize("hasAnyRole('EDITOR','CONTENT_OFFICER','REVIEWER','PUBLISHER','ADMIN','AUDITOR','VIEWER')")
+	public AdminHomepageResponse getHomepage(@RequestParam(defaultValue = "EN") LanguageCode locale) {
+		return contentStructureService.getAdminHomepage(locale);
+	}
+
 	@GetMapping("/topics")
 	@PreAuthorize("hasAnyRole('EDITOR','CONTENT_OFFICER','REVIEWER','PUBLISHER','ADMIN','AUDITOR','VIEWER')")
 	public java.util.List<TopicSummaryResponse> getTopics(
@@ -72,10 +82,22 @@ public class AdminContentController {
 		return contentStructureService.getAdminTopics(locale, ContentStatus.REVIEW);
 	}
 
+	@GetMapping("/topics/review-queue/details")
+	@PreAuthorize("hasAnyRole('REVIEWER','ADMIN','AUDITOR','VIEWER')")
+	public java.util.List<TopicDetailResponse> getReviewQueueDetails(@RequestParam(defaultValue = "EN") LanguageCode locale) {
+		return contentStructureService.getAdminTopicDetails(locale, ContentStatus.REVIEW);
+	}
+
 	@GetMapping("/topics/publish-queue")
 	@PreAuthorize("hasAnyRole('PUBLISHER','ADMIN','AUDITOR','VIEWER')")
 	public java.util.List<TopicSummaryResponse> getPublishQueue(@RequestParam(defaultValue = "EN") LanguageCode locale) {
 		return contentStructureService.getAdminTopics(locale, ContentStatus.APPROVED);
+	}
+
+	@GetMapping("/topics/publish-queue/details")
+	@PreAuthorize("hasAnyRole('PUBLISHER','ADMIN','AUDITOR','VIEWER')")
+	public java.util.List<TopicDetailResponse> getPublishQueueDetails(@RequestParam(defaultValue = "EN") LanguageCode locale) {
+		return contentStructureService.getAdminTopicDetails(locale, ContentStatus.APPROVED);
 	}
 
 	@GetMapping("/topics/{topicId}")
@@ -94,6 +116,12 @@ public class AdminContentController {
 	@PreAuthorize("hasAnyRole('EDITOR','CONTENT_OFFICER','ADMIN')")
 	public ApiResponse<AdminSectionResponse> updateSection(@PathVariable Long sectionId, @RequestBody AdminUpdateSectionRequest request, Authentication authentication) {
 		return contentStructureService.updateSection(sectionId, request, authentication.getName());
+	}
+
+	@PutMapping("/homepage")
+	@PreAuthorize("hasAnyRole('EDITOR','CONTENT_OFFICER','ADMIN')")
+	public ApiResponse<AdminHomepageResponse> updateHomepage(@RequestBody AdminHomepageRequest request, Authentication authentication) {
+		return contentStructureService.updateHomepage(request, authentication.getName());
 	}
 
 	@PostMapping("/sections/{sectionId}/workflow")
@@ -146,6 +174,18 @@ public class AdminContentController {
 		Authentication authentication
 	) {
 		return topicWorkflowService.transitionTopic(topicId, request, authentication);
+	}
+
+	@GetMapping("/topics/{topicId}/workflow-history")
+	@PreAuthorize("hasAnyRole('EDITOR','CONTENT_OFFICER','REVIEWER','PUBLISHER','ADMIN','AUDITOR','VIEWER')")
+	public java.util.List<TopicWorkflowHistoryResponse> getTopicWorkflowHistory(@PathVariable Long topicId) {
+		return topicWorkflowService.getWorkflowHistory(topicId);
+	}
+
+	@GetMapping("/topics/{topicId}/publish-readiness")
+	@PreAuthorize("hasAnyRole('PUBLISHER','ADMIN','AUDITOR','VIEWER')")
+	public TopicPublishReadinessResponse getTopicPublishReadiness(@PathVariable Long topicId) {
+		return topicWorkflowService.getPublishReadiness(topicId);
 	}
 
 	@PostMapping("/topics/workflow/process-scheduled")

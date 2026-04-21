@@ -42,4 +42,9 @@ public class HomepageCard {
 	public HomepageContent getHomepageContent() { return homepageContent; }
 	public Section getSection() { return section; }
 	public Integer getSortOrder() { return sortOrder; }
+
+	public void update(Section section, Integer sortOrder) {
+		this.section = section;
+		this.sortOrder = sortOrder;
+	}
 }

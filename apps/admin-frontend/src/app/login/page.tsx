@@ -14,6 +14,7 @@ export default function LoginPage() {
               height={52}
               priority
               src="/assets/bg_rra_logo.png"
+              style={{ height: "auto", width: "auto" }}
               width={52}
             />
           </div>

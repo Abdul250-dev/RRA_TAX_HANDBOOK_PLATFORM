@@ -72,4 +72,18 @@ public class HomepageContentTranslation {
 	public String getSubtitle() { return subtitle; }
 	public String getSearchLabel() { return searchLabel; }
 	public String getHelpLabel() { return helpLabel; }
+
+	public void update(
+		String kicker,
+		String title,
+		String subtitle,
+		String searchLabel,
+		String helpLabel
+	) {
+		this.kicker = kicker;
+		this.title = title;
+		this.subtitle = subtitle;
+		this.searchLabel = searchLabel;
+		this.helpLabel = helpLabel;
+	}
 }

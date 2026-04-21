@@ -24,6 +24,10 @@ import com.rra.taxhandbook.content.dto.AdminUpdateTopicRequest;
 import com.rra.taxhandbook.content.dto.SectionSummaryResponse;
 import com.rra.taxhandbook.content.dto.TopicDetailResponse;
 import com.rra.taxhandbook.content.dto.TopicWorkflowActionRequest;
+import com.rra.taxhandbook.content.homepage.repository.HomepageCardRepository;
+import com.rra.taxhandbook.content.homepage.repository.HomepageCardTranslationRepository;
+import com.rra.taxhandbook.content.homepage.repository.HomepageContentRepository;
+import com.rra.taxhandbook.content.homepage.repository.HomepageContentTranslationRepository;
 import com.rra.taxhandbook.content.section.entity.SectionType;
 import com.rra.taxhandbook.content.section.repository.SectionRepository;
 import com.rra.taxhandbook.content.section.repository.SectionTranslationRepository;
@@ -34,6 +38,7 @@ import com.rra.taxhandbook.content.topic.repository.TopicTranslationRepository;
 import com.rra.taxhandbook.content.topicblock.entity.TopicBlockType;
 import com.rra.taxhandbook.content.topicblock.repository.TopicBlockRepository;
 import com.rra.taxhandbook.content.topicblock.repository.TopicBlockTranslationRepository;
+import com.rra.taxhandbook.content.workflow.TopicWorkflowHistoryRepository;
 import com.rra.taxhandbook.content.workflow.TopicWorkflowService;
 
 @SpringBootTest(properties = "app.content.required-publish-locales=EN,FR")
@@ -64,8 +69,28 @@ class TopicPublishLocaleRequirementsIntegrationTests {
 	@Autowired
 	private SectionRepository sectionRepository;
 
+	@Autowired
+	private HomepageCardTranslationRepository homepageCardTranslationRepository;
+
+	@Autowired
+	private HomepageCardRepository homepageCardRepository;
+
+	@Autowired
+	private HomepageContentTranslationRepository homepageContentTranslationRepository;
+
+	@Autowired
+	private HomepageContentRepository homepageContentRepository;
+
+	@Autowired
+	private TopicWorkflowHistoryRepository topicWorkflowHistoryRepository;
+
 	@BeforeEach
 	void setUp() {
+		homepageCardTranslationRepository.deleteAll();
+		homepageCardRepository.deleteAll();
+		homepageContentTranslationRepository.deleteAll();
+		homepageContentRepository.deleteAll();
+		topicWorkflowHistoryRepository.deleteAll();
 		topicBlockTranslationRepository.deleteAll();
 		topicBlockRepository.deleteAll();
 		topicTranslationRepository.deleteAll();
@@ -135,7 +160,16 @@ class TopicPublishLocaleRequirementsIntegrationTests {
 				authentication("publisher@rra.test", "PUBLISHER")
 			)
 		);
-		assertEquals("Topic is missing one or more required publish locales: [EN, FR].", topicLocaleException.getMessage());
+		assertEquals(
+			"Topic is not ready to publish: Topic is missing one or more required publish locales: [EN, FR]. Section is missing one or more required publish locales: [EN, FR]. Topic block " + blockResponse.data().id() + " is missing one or more required publish locales: [EN, FR].",
+			topicLocaleException.getMessage()
+		);
+
+		topicWorkflowService.transitionTopic(
+			topicResponse.data().id(),
+			new TopicWorkflowActionRequest("REQUEST_CHANGES", null, "Add the missing French translations before publishing."),
+			authentication("reviewer@rra.test", "REVIEWER")
+		);
 
 		contentStructureService.updateSection(
 			sectionResponse.data().id(),
@@ -165,6 +199,17 @@ class TopicPublishLocaleRequirementsIntegrationTests {
 			"admin@rra.test"
 		);
 
+		topicWorkflowService.transitionTopic(
+			topicResponse.data().id(),
+			new TopicWorkflowActionRequest("SUBMIT_FOR_REVIEW"),
+			authentication("editor@rra.test", "EDITOR")
+		);
+		topicWorkflowService.transitionTopic(
+			topicResponse.data().id(),
+			new TopicWorkflowActionRequest("APPROVE"),
+			authentication("reviewer@rra.test", "REVIEWER")
+		);
+
 		IllegalArgumentException blockLocaleException = assertThrows(
 			IllegalArgumentException.class,
 			() -> topicWorkflowService.transitionTopic(
@@ -174,8 +219,14 @@ class TopicPublishLocaleRequirementsIntegrationTests {
 			)
 		);
 		assertEquals(
-			"Topic block " + blockResponse.data().id() + " is missing one or more required publish locales: [EN, FR].",
+			"Topic is not ready to publish: Topic block " + blockResponse.data().id() + " is missing one or more required publish locales: [EN, FR].",
 			blockLocaleException.getMessage()
+		);
+
+		topicWorkflowService.transitionTopic(
+			topicResponse.data().id(),
+			new TopicWorkflowActionRequest("REQUEST_CHANGES", null, "Add the missing French block translation before publishing."),
+			authentication("reviewer@rra.test", "REVIEWER")
 		);
 
 		contentStructureService.updateTopicBlock(
@@ -189,6 +240,17 @@ class TopicPublishLocaleRequirementsIntegrationTests {
 				"Contenu francais"
 			),
 			"admin@rra.test"
+		);
+
+		topicWorkflowService.transitionTopic(
+			topicResponse.data().id(),
+			new TopicWorkflowActionRequest("SUBMIT_FOR_REVIEW"),
+			authentication("editor@rra.test", "EDITOR")
+		);
+		topicWorkflowService.transitionTopic(
+			topicResponse.data().id(),
+			new TopicWorkflowActionRequest("APPROVE"),
+			authentication("reviewer@rra.test", "REVIEWER")
 		);
 
 		var publishResponse = topicWorkflowService.transitionTopic(
