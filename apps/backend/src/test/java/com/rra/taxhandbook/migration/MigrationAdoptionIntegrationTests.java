@@ -58,7 +58,7 @@ class MigrationAdoptionIntegrationTests {
 			.filter(version -> version != null)
 			.collect(Collectors.toList());
 
-		assertEquals(java.util.List.of("1", "2", "3", "4", "5", "6", "7"), appliedVersions);
+		assertEquals(java.util.List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"), appliedVersions);
 		assertEquals(0, flyway.info().pending().length);
 	}
 
@@ -86,6 +86,42 @@ class MigrationAdoptionIntegrationTests {
 		assertTrue(columnExists("EMAIL_NOTIFICATIONS", "STATUS"));
 		assertTrue(columnExists("EMAIL_NOTIFICATIONS", "NEXT_ATTEMPT_AT"));
 		assertTrue(columnExists("EMAIL_NOTIFICATIONS", "RECIPIENT_USERNAME"));
+		assertTrue(tableExists("HOMEPAGE_CONTENTS"));
+		assertTrue(tableExists("CONTENT_TOPIC_WORKFLOW_HISTORY"));
+	}
+
+	@Test
+	void migrationSeedsCmsBackedContactContent() {
+		assertEquals(1, countRows(
+			"""
+			select count(*)
+			from content_section_translations
+			where slug = ?
+			  and locale = ?
+			""",
+			"contact",
+			"EN"
+		));
+		assertEquals(1, countRows(
+			"""
+			select count(*)
+			from content_topic_translations
+			where slug = ?
+			  and locale = ?
+			""",
+			"rra-contact-details",
+			"EN"
+		));
+		assertEquals(1, countRows(
+			"""
+			select count(*)
+			from content_topic_translations
+			where slug = ?
+			  and locale = ?
+			""",
+			"tax-centres",
+			"EN"
+		));
 	}
 
 	private boolean tableExists(String tableName) {

@@ -1209,6 +1209,93 @@
           }
         },
         {
+          "name": "Get Contact Section (EN)",
+          "request": {
+            "description": "Returns the CMS-backed public contact section, including contact topics such as RRA contact details and tax centres.",
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/sections/contact?locale=EN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "sections",
+                "contact"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "EN"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get RRA Contact Details Topic (EN)",
+          "request": {
+            "description": "Returns the CMS-backed public RRA contact details topic.",
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/topics/rra-contact-details?locale=EN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "topics",
+                "rra-contact-details"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "EN"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Tax Centres Topic (EN)",
+          "request": {
+            "description": "Returns the CMS-backed public tax centres topic.",
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/topics/tax-centres?locale=EN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "topics",
+                "tax-centres"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "EN"
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "Get Topic By Slug (EN)",
           "request": {
             "description": "Returns a public TopicDetailResponse with fields id, sectionId, title, slug, summary, introText, topicType, status, scheduledPublishAt, lastUpdated, blocks, relatedFaqs, relatedDocuments, and relatedGuides.",
@@ -1288,6 +1375,38 @@
                 {
                   "key": "locale",
                   "value": "KIN"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Public Handbook",
+          "request": {
+            "description": "Searches published public handbook content by locale. Returns PublicSearchResponse with grouped sections, topics, guides, faqs, and documents. The query parameter q is required and must be at least 2 characters.",
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/search?q=tax&locale=EN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "tax"
+                },
+                {
+                  "key": "locale",
+                  "value": "EN"
                 }
               ]
             }
