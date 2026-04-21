@@ -13,6 +13,7 @@ import com.rra.taxhandbook.content.dto.HomepageResponse;
 import com.rra.taxhandbook.content.dto.PublicSectionDetailResponse;
 import com.rra.taxhandbook.content.dto.SectionSummaryResponse;
 import com.rra.taxhandbook.content.dto.TopicDetailResponse;
+import com.rra.taxhandbook.content.dto.TopicSummaryResponse;
 import com.rra.taxhandbook.content.service.ContentStructureService;
 
 @RestController
@@ -43,5 +44,15 @@ public class PublicContentController {
 	@GetMapping("/topics/{slug}")
 	public TopicDetailResponse getTopic(@PathVariable String slug, @RequestParam(defaultValue = "EN") LanguageCode locale) {
 		return contentStructureService.getTopicBySlug(slug, locale);
+	}
+
+	@GetMapping("/guides")
+	public List<TopicSummaryResponse> getGuides(@RequestParam(defaultValue = "EN") LanguageCode locale) {
+		return contentStructureService.getGuides(locale);
+	}
+
+	@GetMapping("/guides/{slug}")
+	public TopicDetailResponse getGuide(@PathVariable String slug, @RequestParam(defaultValue = "EN") LanguageCode locale) {
+		return contentStructureService.getGuideBySlug(slug, locale);
 	}
 }

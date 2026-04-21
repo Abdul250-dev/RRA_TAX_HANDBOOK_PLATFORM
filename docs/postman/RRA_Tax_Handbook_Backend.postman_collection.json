@@ -1211,7 +1211,7 @@
         {
           "name": "Get Topic By Slug (EN)",
           "request": {
-            "description": "Returns a public TopicDetailResponse with fields id, sectionId, title, slug, summary, introText, topicType, status, scheduledPublishAt, and blocks.",
+            "description": "Returns a public TopicDetailResponse with fields id, sectionId, title, slug, summary, introText, topicType, status, scheduledPublishAt, lastUpdated, blocks, relatedFaqs, relatedDocuments, and relatedGuides.",
             "method": "GET",
             "auth": {
               "type": "noauth"
@@ -1292,6 +1292,63 @@
               ]
             }
           }
+        },
+        {
+          "name": "Get Guides (EN)",
+          "request": {
+            "description": "Returns all published GUIDE topics for the requested locale.",
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/guides?locale=EN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "guides"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "EN"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Guide By Slug (EN)",
+          "request": {
+            "description": "Returns a public TopicDetailResponse for a published GUIDE topic only.",
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/guides/{{topicSlug}}?locale=EN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "guides",
+                "{{topicSlug}}"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "EN"
+                }
+              ]
+            }
+          }
         }
       ]
     },
@@ -1340,6 +1397,61 @@
                 "admin",
                 "content",
                 "summary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Admin Homepage",
+          "request": {
+            "description": "Returns the editable homepage payload for the requested locale, including kicker, title, subtitle, button labels, status, updatedAt, and homepage cards.",
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/content/homepage?locale=EN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "content",
+                "homepage"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "EN"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Admin Homepage",
+          "request": {
+            "description": "Updates the homepage copy and cards for a locale. Prefer sectionSlug in Postman so the request is stable across databases; admin UI may send sectionId from the current section list.",
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"locale\": \"EN\",\n  \"kicker\": \"Rwanda Revenue Authority\",\n  \"title\": \"Tax Handbook\",\n  \"subtitle\": \"Explore the official public handbook for tax information, services, procedures, and practical guidance across Rwanda's tax system.\",\n  \"searchLabel\": \"Search handbook\",\n  \"helpLabel\": \"Get help\",\n  \"cards\": [\n    {\n      \"sectionSlug\": \"general-information\",\n      \"sortOrder\": 1,\n      \"title\": \"General Information\",\n      \"description\": \"See the tax handbook introduction, purpose of the tax handbook, history of taxation and other general information.\"\n    },\n    {\n      \"sectionSlug\": \"taxes\",\n      \"sortOrder\": 2,\n      \"title\": \"Taxes administered in Rwanda\",\n      \"description\": \"Find information on different taxes, their rates, how to file and pay taxes and non-compliance penalties.\"\n    },\n    {\n      \"sectionSlug\": \"other-services\",\n      \"sortOrder\": 3,\n      \"title\": \"Other services\",\n      \"description\": \"Find information on other tax-related services such VAT Rewards& Refund, Debt Management, Audit, Certificates offered by RRA and Motor Vehicle Services among others.\"\n    },\n    {\n      \"sectionSlug\": \"guides\",\n      \"sortOrder\": 4,\n      \"title\": \"User guides and examples\",\n      \"description\": \"Here you will find user guides on filing different taxes and various examples to help your understanding on various tax types.\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/content/homepage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "content",
+                "homepage"
               ]
             }
           }
@@ -1643,6 +1755,34 @@
           }
         },
         {
+          "name": "Get Review Queue Details",
+          "request": {
+            "description": "Returns full TopicDetailResponse objects for topics currently in REVIEW so reviewers can read all topic content and blocks before taking action. Admin detail responses include workflowHistory and publishReadiness metadata.",
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/content/topics/review-queue/details?locale=EN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "content",
+                "topics",
+                "review-queue",
+                "details"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "EN"
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "Get Publish Queue",
           "request": {
             "method": "GET",
@@ -1669,8 +1809,37 @@
           }
         },
         {
+          "name": "Get Publish Queue Details",
+          "request": {
+            "description": "Returns full TopicDetailResponse objects for APPROVED topics so publishers can read all topic content and blocks before publish/schedule/archive actions. Admin detail responses include workflowHistory and publishReadiness metadata.",
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/content/topics/publish-queue/details?locale=EN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "content",
+                "topics",
+                "publish-queue",
+                "details"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "EN"
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "Update Topic",
           "request": {
+            "description": "Updates topic structure and translation content. Only DRAFT topics are editable. If a topic is in REVIEW, APPROVED, or PUBLISHED, first move it back to DRAFT with REQUEST_CHANGES or UNPUBLISH as appropriate.",
             "method": "PUT",
             "header": [
               {
@@ -1770,6 +1939,7 @@
         {
           "name": "Update Topic Block",
           "request": {
+            "description": "Updates an existing topic block. Only blocks attached to DRAFT topics are editable, including topics returned from review through REQUEST_CHANGES.",
             "method": "PUT",
             "header": [
               {
@@ -1799,7 +1969,7 @@
         {
           "name": "Transition Topic Workflow",
           "request": {
-            "description": "Transitions a topic through editorial workflow. Supported actions now include SUBMIT_FOR_REVIEW, REQUEST_CHANGES, APPROVE, SCHEDULE_PUBLISH, PUBLISH, UNPUBLISH, and ARCHIVE. When using SCHEDULE_PUBLISH, include a future ISO-8601 scheduledAt timestamp. Response shape is ApiResponse<TopicWorkflowResponse> with data fields topicId, title, slug, status, action, performedBy, and optional scheduledPublishAt.",
+            "description": "Transitions a topic through editorial workflow. Supported actions now include SUBMIT_FOR_REVIEW, REQUEST_CHANGES, APPROVE, SCHEDULE_PUBLISH, PUBLISH, UNPUBLISH, and ARCHIVE. REQUEST_CHANGES can move REVIEW or APPROVED topics back to DRAFT and requires a comment so editors know what to fix. Other actions can include optional comment for reviewer/publisher notes. When using SCHEDULE_PUBLISH, include a future ISO-8601 scheduledAt timestamp. Response shape is ApiResponse<TopicWorkflowResponse> with data fields topicId, title, slug, status, action, performedBy, comment, and optional scheduledPublishAt. Each transition also creates a workflow history entry.",
             "method": "POST",
             "header": [
               {
@@ -1809,7 +1979,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"action\": \"SCHEDULE_PUBLISH\",\n  \"scheduledAt\": \"2026-04-20T08:00:00Z\"\n}"
+              "raw": "{\n  \"action\": \"REQUEST_CHANGES\",\n  \"comment\": \"Please add the missing filing deadline and clarify the penalty section before resubmitting.\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/admin/content/topics/{{topicId}}/workflow",
@@ -1828,9 +1998,53 @@
           }
         },
         {
+          "name": "Get Topic Workflow History",
+          "request": {
+            "description": "Returns workflow history entries for one topic, newest first. Use this to show reviewer change requests, approval notes, publisher notes, and scheduled publish execution records.",
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/content/topics/{{topicId}}/workflow-history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "content",
+                "topics",
+                "{{topicId}}",
+                "workflow-history"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Topic Publish Readiness",
+          "request": {
+            "description": "Checks whether a topic can be published and returns all blocking issues at once. Response fields are topicId, status, ready, requiredLocales, and issues. Useful before PUBLISH or SCHEDULE_PUBLISH.",
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/content/topics/{{topicId}}/publish-readiness",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "content",
+                "topics",
+                "{{topicId}}",
+                "publish-readiness"
+              ]
+            }
+          }
+        },
+        {
           "name": "Process Scheduled Publishes",
           "request": {
-            "description": "Publishes any approved topics whose scheduledPublishAt is due. This is the current MVP release mechanism until an automated scheduler is introduced. Response shape is ApiResponse<ScheduledPublishProcessingResponse> with data.processedCount.",
+            "description": "Publishes any approved topics whose scheduledPublishAt is due. Response shape is ApiResponse<ScheduledPublishProcessingResponse> with data.processedCount, data.skippedCount, data.processedTopicIds, and data.skippedTopics. Each skipped item includes topicId and readiness reasons such as missing blocks or missing required locales.",
             "method": "POST",
             "header": [],
             "url": {

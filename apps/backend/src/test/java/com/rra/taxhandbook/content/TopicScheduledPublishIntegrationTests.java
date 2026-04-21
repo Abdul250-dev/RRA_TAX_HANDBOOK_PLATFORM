@@ -28,6 +28,10 @@ import com.rra.taxhandbook.content.dto.ScheduledPublishProcessingResponse;
 import com.rra.taxhandbook.content.dto.TopicDetailResponse;
 import com.rra.taxhandbook.content.dto.TopicWorkflowActionRequest;
 import com.rra.taxhandbook.content.dto.TopicWorkflowResponse;
+import com.rra.taxhandbook.content.homepage.repository.HomepageCardRepository;
+import com.rra.taxhandbook.content.homepage.repository.HomepageCardTranslationRepository;
+import com.rra.taxhandbook.content.homepage.repository.HomepageContentRepository;
+import com.rra.taxhandbook.content.homepage.repository.HomepageContentTranslationRepository;
 import com.rra.taxhandbook.content.section.entity.SectionType;
 import com.rra.taxhandbook.content.section.repository.SectionRepository;
 import com.rra.taxhandbook.content.section.repository.SectionTranslationRepository;
@@ -39,6 +43,7 @@ import com.rra.taxhandbook.content.topic.repository.TopicTranslationRepository;
 import com.rra.taxhandbook.content.topicblock.entity.TopicBlockType;
 import com.rra.taxhandbook.content.topicblock.repository.TopicBlockRepository;
 import com.rra.taxhandbook.content.topicblock.repository.TopicBlockTranslationRepository;
+import com.rra.taxhandbook.content.workflow.TopicWorkflowHistoryRepository;
 import com.rra.taxhandbook.content.workflow.TopicWorkflowService;
 
 @SpringBootTest
@@ -69,8 +74,28 @@ class TopicScheduledPublishIntegrationTests {
 	@Autowired
 	private SectionRepository sectionRepository;
 
+	@Autowired
+	private HomepageCardTranslationRepository homepageCardTranslationRepository;
+
+	@Autowired
+	private HomepageCardRepository homepageCardRepository;
+
+	@Autowired
+	private HomepageContentTranslationRepository homepageContentTranslationRepository;
+
+	@Autowired
+	private HomepageContentRepository homepageContentRepository;
+
+	@Autowired
+	private TopicWorkflowHistoryRepository topicWorkflowHistoryRepository;
+
 	@BeforeEach
 	void setUp() {
+		homepageCardTranslationRepository.deleteAll();
+		homepageCardRepository.deleteAll();
+		homepageContentTranslationRepository.deleteAll();
+		homepageContentRepository.deleteAll();
+		topicWorkflowHistoryRepository.deleteAll();
 		topicBlockTranslationRepository.deleteAll();
 		topicBlockRepository.deleteAll();
 		topicTranslationRepository.deleteAll();
@@ -159,6 +184,9 @@ class TopicScheduledPublishIntegrationTests {
 		var response = topicWorkflowService.processScheduledPublishes(authentication("publisher@rra.test", "PUBLISHER"));
 
 		assertEquals(1, response.data().processedCount());
+		assertEquals(0, response.data().skippedCount());
+		assertEquals(List.of(topic.getId()), response.data().processedTopicIds());
+		assertTrue(response.data().skippedTopics().isEmpty());
 		Topic publishedTopic = topicRepository.findById(topic.getId()).orElseThrow();
 		assertEquals(ContentStatus.PUBLISHED, publishedTopic.getStatus());
 		assertNotNull(publishedTopic.getPublishedAt());
@@ -167,6 +195,59 @@ class TopicScheduledPublishIntegrationTests {
 
 		TopicDetailResponse publicTopic = contentStructureService.getTopicBySlug("scheduled-goes-live", LanguageCode.EN);
 		assertEquals("PUBLISHED", publicTopic.status());
+	}
+
+	@Test
+	void processScheduledPublishesReportsSkippedTopicsWithReasons() {
+		var sectionResponse = contentStructureService.createSection(
+			new AdminCreateSectionRequest(
+				null,
+				SectionType.MAIN,
+				1,
+				LanguageCode.EN,
+				"Skipped Scheduled Section",
+				"skipped-scheduled-section",
+				"Scheduled section summary"
+			),
+			"admin@rra.test"
+		);
+		var topicResponse = contentStructureService.createTopic(
+			new AdminCreateTopicRequest(
+				sectionResponse.data().id(),
+				TopicType.TAX_TOPIC,
+				1,
+				LanguageCode.EN,
+				"Skipped Scheduled Topic",
+				"skipped-scheduled-topic",
+				"Scheduled topic summary",
+				"Scheduled topic intro"
+			),
+			"admin@rra.test"
+		);
+		topicWorkflowService.transitionTopic(
+			topicResponse.data().id(),
+			new TopicWorkflowActionRequest("SUBMIT_FOR_REVIEW"),
+			authentication("editor@rra.test", "EDITOR")
+		);
+		topicWorkflowService.transitionTopic(
+			topicResponse.data().id(),
+			new TopicWorkflowActionRequest("APPROVE"),
+			authentication("reviewer@rra.test", "REVIEWER")
+		);
+
+		Topic approvedTopic = topicRepository.findById(topicResponse.data().id()).orElseThrow();
+		approvedTopic.schedulePublish(Instant.now().minusSeconds(5));
+		approvedTopic.touch(Instant.now());
+		topicRepository.save(approvedTopic);
+
+		var response = topicWorkflowService.processScheduledPublishes(authentication("publisher@rra.test", "PUBLISHER"));
+
+		assertEquals(0, response.data().processedCount());
+		assertEquals(1, response.data().skippedCount());
+		assertTrue(response.data().processedTopicIds().isEmpty());
+		assertEquals(topicResponse.data().id(), response.data().skippedTopics().get(0).topicId());
+		assertEquals(List.of("Topic must contain at least one content block."), response.data().skippedTopics().get(0).reasons());
+		assertEquals(ContentStatus.APPROVED, topicRepository.findById(topicResponse.data().id()).orElseThrow().getStatus());
 	}
 
 	private Topic createApprovedTopicWithBlock(String slug) {

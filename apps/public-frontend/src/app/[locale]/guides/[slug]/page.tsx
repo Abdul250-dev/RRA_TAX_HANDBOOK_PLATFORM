@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 
 import { TopicDetailPage } from "../../../../components/handbook/TopicDetailPage";
-import { ApiRequestError, getHandbookTopicBySlug } from "../../../../lib/api/handbook";
+import { ApiRequestError, getPublicGuideBySlug } from "../../../../lib/api/handbook";
 
-export default async function TopicPage({
+export default async function GuideDetailPage({
   params,
 }: {
   params: Promise<{ locale: string; slug: string }>;
@@ -11,9 +11,9 @@ export default async function TopicPage({
   const { locale, slug } = await params;
 
   try {
-    const topic = await getHandbookTopicBySlug(locale, slug);
+    const guide = await getPublicGuideBySlug(locale, slug);
 
-    return <TopicDetailPage locale={locale} topic={topic} />;
+    return <TopicDetailPage locale={locale} topic={guide} />;
   } catch (error) {
     if (!(error instanceof ApiRequestError) || error.status === 404) {
       notFound();

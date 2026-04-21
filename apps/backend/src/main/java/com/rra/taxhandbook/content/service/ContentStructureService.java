@@ -14,6 +14,8 @@ import com.rra.taxhandbook.common.exception.ResourceNotFoundException;
 import com.rra.taxhandbook.content.dto.AdminCreateSectionRequest;
 import com.rra.taxhandbook.content.dto.AdminCreateTopicBlockRequest;
 import com.rra.taxhandbook.content.dto.AdminCreateTopicRequest;
+import com.rra.taxhandbook.content.dto.AdminHomepageRequest;
+import com.rra.taxhandbook.content.dto.AdminHomepageResponse;
 import com.rra.taxhandbook.content.dto.AdminSectionResponse;
 import com.rra.taxhandbook.content.dto.AdminUpdateSectionRequest;
 import com.rra.taxhandbook.content.dto.AdminUpdateTopicBlockRequest;
@@ -26,17 +28,24 @@ import com.rra.taxhandbook.content.dto.SectionSummaryResponse;
 import com.rra.taxhandbook.content.dto.SectionWorkflowActionRequest;
 import com.rra.taxhandbook.content.dto.TopicBlockResponse;
 import com.rra.taxhandbook.content.dto.TopicDetailResponse;
+import com.rra.taxhandbook.content.dto.TopicPublishReadinessResponse;
 import com.rra.taxhandbook.content.dto.TopicSummaryResponse;
+import com.rra.taxhandbook.content.dto.TopicWorkflowHistoryResponse;
 import com.rra.taxhandbook.content.homepage.entity.HomepageContent;
 import com.rra.taxhandbook.content.homepage.entity.HomepageContentTranslation;
+import com.rra.taxhandbook.content.homepage.entity.HomepageCard;
+import com.rra.taxhandbook.content.homepage.entity.HomepageCardTranslation;
+import com.rra.taxhandbook.content.homepage.repository.HomepageCardRepository;
 import com.rra.taxhandbook.content.homepage.repository.HomepageCardTranslationRepository;
 import com.rra.taxhandbook.content.homepage.repository.HomepageContentRepository;
 import com.rra.taxhandbook.content.homepage.repository.HomepageContentTranslationRepository;
 import com.rra.taxhandbook.content.section.entity.Section;
+import com.rra.taxhandbook.content.section.entity.SectionType;
 import com.rra.taxhandbook.content.section.entity.SectionTranslation;
 import com.rra.taxhandbook.content.section.repository.SectionRepository;
 import com.rra.taxhandbook.content.section.repository.SectionTranslationRepository;
 import com.rra.taxhandbook.content.topic.entity.Topic;
+import com.rra.taxhandbook.content.topic.entity.TopicType;
 import com.rra.taxhandbook.content.topic.entity.TopicTranslation;
 import com.rra.taxhandbook.content.topic.repository.TopicRepository;
 import com.rra.taxhandbook.content.topic.repository.TopicTranslationRepository;
@@ -44,6 +53,7 @@ import com.rra.taxhandbook.content.topicblock.entity.TopicBlock;
 import com.rra.taxhandbook.content.topicblock.entity.TopicBlockTranslation;
 import com.rra.taxhandbook.content.topicblock.repository.TopicBlockRepository;
 import com.rra.taxhandbook.content.topicblock.repository.TopicBlockTranslationRepository;
+import com.rra.taxhandbook.content.workflow.TopicWorkflowHistoryRepository;
 
 @Service
 public class ContentStructureService {
@@ -56,7 +66,10 @@ public class ContentStructureService {
 	private final TopicBlockTranslationRepository topicBlockTranslationRepository;
 	private final HomepageContentRepository homepageContentRepository;
 	private final HomepageContentTranslationRepository homepageContentTranslationRepository;
+	private final HomepageCardRepository homepageCardRepository;
 	private final HomepageCardTranslationRepository homepageCardTranslationRepository;
+	private final TopicWorkflowHistoryRepository topicWorkflowHistoryRepository;
+	private final TopicPublishReadinessService topicPublishReadinessService;
 	private final AuditLogService auditLogService;
 
 	public ContentStructureService(
@@ -68,7 +81,10 @@ public class ContentStructureService {
 		TopicBlockTranslationRepository topicBlockTranslationRepository,
 		HomepageContentRepository homepageContentRepository,
 		HomepageContentTranslationRepository homepageContentTranslationRepository,
+		HomepageCardRepository homepageCardRepository,
 		HomepageCardTranslationRepository homepageCardTranslationRepository,
+		TopicWorkflowHistoryRepository topicWorkflowHistoryRepository,
+		TopicPublishReadinessService topicPublishReadinessService,
 		AuditLogService auditLogService
 	) {
 		this.sectionRepository = sectionRepository;
@@ -79,7 +95,10 @@ public class ContentStructureService {
 		this.topicBlockTranslationRepository = topicBlockTranslationRepository;
 		this.homepageContentRepository = homepageContentRepository;
 		this.homepageContentTranslationRepository = homepageContentTranslationRepository;
+		this.homepageCardRepository = homepageCardRepository;
 		this.homepageCardTranslationRepository = homepageCardTranslationRepository;
+		this.topicWorkflowHistoryRepository = topicWorkflowHistoryRepository;
+		this.topicPublishReadinessService = topicPublishReadinessService;
 		this.auditLogService = auditLogService;
 	}
 
@@ -184,6 +203,40 @@ public class ContentStructureService {
 			.toList();
 	}
 
+	public AdminHomepageResponse getAdminHomepage(LanguageCode locale) {
+		HomepageContent homepageContent = homepageContentRepository.findFirstByOrderByUpdatedAtDesc()
+			.orElseGet(() -> new HomepageContent(ContentStatus.DRAFT, Instant.now()));
+		HomepageContentTranslation translation = homepageContent.getId() == null
+			? new HomepageContentTranslation(homepageContent, locale, "", "", "", "", "")
+			: homepageContentTranslationRepository.findByHomepageContent_IdAndLocale(homepageContent.getId(), locale)
+				.orElseGet(() -> new HomepageContentTranslation(homepageContent, locale, "", "", "", "", ""));
+
+		List<HomepageCardResponse> cards = homepageContent.getId() == null
+			? List.of()
+			: homepageCardTranslationRepository
+				.findByHomepageCard_HomepageContent_IdAndLocaleOrderByHomepageCard_SortOrderAsc(homepageContent.getId(), locale)
+				.stream()
+				.map(cardTranslation -> new HomepageCardResponse(
+					cardTranslation.getHomepageCard().getSection().getId(),
+					cardTranslation.getTitle(),
+					getSectionSlug(cardTranslation.getHomepageCard().getSection().getId(), locale),
+					cardTranslation.getDescription(),
+					cardTranslation.getHomepageCard().getSortOrder()
+				))
+				.toList();
+
+		return new AdminHomepageResponse(
+			translation.getKicker(),
+			translation.getTitle(),
+			translation.getSubtitle(),
+			translation.getSearchLabel(),
+			translation.getHelpLabel(),
+			homepageContent.getStatus().name(),
+			homepageContent.getUpdatedAt(),
+			cards
+		);
+	}
+
 	public ContentSummaryResponse getContentSummary() {
 		return new ContentSummaryResponse(
 			topicRepository.count(),
@@ -219,6 +272,36 @@ public class ContentStructureService {
 		TopicTranslation topicTranslation = topicTranslationRepository.findBySlugAndLocaleAndTopic_Status(slug, locale, ContentStatus.PUBLISHED)
 			.orElseThrow(() -> new ResourceNotFoundException("Topic not found for slug: " + slug));
 
+		return toTopicDetailResponse(topicTranslation, locale);
+	}
+
+	public List<TopicSummaryResponse> getGuides(LanguageCode locale) {
+		return topicTranslationRepository
+			.findByLocaleAndTopic_StatusAndTopic_TopicTypeOrderByTopic_SortOrderAsc(
+				locale,
+				ContentStatus.PUBLISHED,
+				TopicType.GUIDE
+			)
+			.stream()
+			.map(this::toTopicSummary)
+			.toList();
+	}
+
+	public List<TopicDetailResponse> getAdminTopicDetails(LanguageCode locale, ContentStatus status) {
+		return topicTranslationRepository.findForAdminList(locale, status).stream()
+			.map(translation -> getAdminTopic(translation.getTopic().getId(), locale))
+			.toList();
+	}
+
+	public TopicDetailResponse getGuideBySlug(String slug, LanguageCode locale) {
+		TopicTranslation topicTranslation = topicTranslationRepository
+			.findBySlugAndLocaleAndTopic_StatusAndTopic_TopicType(slug, locale, ContentStatus.PUBLISHED, TopicType.GUIDE)
+			.orElseThrow(() -> new ResourceNotFoundException("Guide not found for slug: " + slug));
+
+		return toTopicDetailResponse(topicTranslation, locale);
+	}
+
+	private TopicDetailResponse toTopicDetailResponse(TopicTranslation topicTranslation, LanguageCode locale) {
 		List<TopicBlockResponse> blocks = topicBlockTranslationRepository
 			.findByTopicBlock_Topic_IdAndLocaleAndTopicBlock_StatusOrderByTopicBlock_SortOrderAsc(
 				topicTranslation.getTopic().getId(),
@@ -235,6 +318,7 @@ public class ContentStructureService {
 				blockTranslation.getTopicBlock().getSortOrder()
 			))
 			.toList();
+		List<TopicSummaryResponse> relatedGuides = getRelatedGuides(topicTranslation.getTopic(), locale);
 
 		return new TopicDetailResponse(
 			topicTranslation.getTopic().getId(),
@@ -246,7 +330,13 @@ public class ContentStructureService {
 			topicTranslation.getTopic().getTopicType().name(),
 			topicTranslation.getTopic().getStatus().name(),
 			topicTranslation.getTopic().getScheduledPublishAt(),
-			blocks
+			topicTranslation.getTopic().getUpdatedAt(),
+			blocks,
+			List.of(),
+			List.of(),
+			relatedGuides,
+			List.of(),
+			null
 		);
 	}
 
@@ -279,7 +369,13 @@ public class ContentStructureService {
 			topic.getTopicType().name(),
 			topic.getStatus().name(),
 			topic.getScheduledPublishAt(),
-			blocks
+			topic.getUpdatedAt(),
+			blocks,
+			List.of(),
+			List.of(),
+			getRelatedGuides(topic, locale),
+			getWorkflowHistory(topic.getId()),
+			getPublishReadiness(topic)
 		);
 	}
 
@@ -324,7 +420,13 @@ public class ContentStructureService {
 			topic.getTopicType().name(),
 			topic.getStatus().name(),
 			topic.getScheduledPublishAt(),
-			List.of()
+			topic.getUpdatedAt(),
+			List.of(),
+			List.of(),
+			List.of(),
+			List.of(),
+			List.of(),
+			getPublishReadiness(topic)
 		));
 	}
 
@@ -379,6 +481,7 @@ public class ContentStructureService {
 	public ApiResponse<TopicDetailResponse> updateTopic(Long topicId, AdminUpdateTopicRequest request, String actor) {
 		Topic topic = topicRepository.findById(topicId)
 			.orElseThrow(() -> new ResourceNotFoundException("Topic not found: " + topicId));
+		requireEditableTopic(topic);
 		validateTopicSlug(request.slug(), request.locale(), topicId);
 		Section section = sectionRepository.findById(request.sectionId())
 			.orElseThrow(() -> new ResourceNotFoundException("Section not found: " + request.sectionId()));
@@ -396,6 +499,7 @@ public class ContentStructureService {
 	public ApiResponse<TopicBlockResponse> updateTopicBlock(Long blockId, AdminUpdateTopicBlockRequest request, String actor) {
 		TopicBlock topicBlock = topicBlockRepository.findById(blockId)
 			.orElseThrow(() -> new ResourceNotFoundException("Topic block not found: " + blockId));
+		requireEditableTopicBlock(topicBlock);
 		TopicBlockTranslation translation = topicBlockTranslationRepository.findByTopicBlock_IdAndLocale(blockId, request.locale())
 			.orElseGet(() -> new TopicBlockTranslation(topicBlock, request.locale(), request.title(), request.body()));
 		topicBlock.updateStructure(request.blockType(), request.sortOrder(), request.anchorKey());
@@ -415,6 +519,93 @@ public class ContentStructureService {
 	}
 
 	@Transactional
+	public ApiResponse<AdminHomepageResponse> updateHomepage(AdminHomepageRequest request, String actor) {
+		if (request.locale() == null) {
+			throw new IllegalArgumentException("Homepage locale is required.");
+		}
+		if (request.cards() == null || request.cards().isEmpty()) {
+			throw new IllegalArgumentException("At least one homepage card is required.");
+		}
+		if (request.cards().size() != 4) {
+			throw new IllegalArgumentException("Homepage must contain exactly four cards.");
+		}
+		List<Section> cardSections = request.cards().stream()
+			.map(card -> resolveHomepageCardSection(
+				card.sectionId(),
+				card.sectionSlug(),
+				card.title(),
+				card.description(),
+				card.sortOrder(),
+				request.locale()
+			))
+			.toList();
+		long uniqueSectionCount = cardSections.stream().map(Section::getId).distinct().count();
+		if (uniqueSectionCount != request.cards().size()) {
+			throw new IllegalArgumentException("Homepage cards must reference four different sections.");
+		}
+
+		Instant now = Instant.now();
+		HomepageContent homepageContent = homepageContentRepository.findFirstByOrderByUpdatedAtDesc().orElse(null);
+		if (homepageContent == null) {
+			homepageContent = homepageContentRepository.save(new HomepageContent(ContentStatus.PUBLISHED, now));
+		}
+		homepageContent.changeStatus(ContentStatus.PUBLISHED);
+		homepageContent.touch(now);
+		homepageContentRepository.save(homepageContent);
+
+		HomepageContentTranslation translation = homepageContentTranslationRepository
+			.findByHomepageContent_IdAndLocale(homepageContent.getId(), request.locale())
+			.orElse(null);
+		if (translation == null) {
+			translation = new HomepageContentTranslation(
+					homepageContent,
+					request.locale(),
+					request.kicker(),
+					request.title(),
+					request.subtitle(),
+					request.searchLabel(),
+					request.helpLabel()
+				);
+		}
+		translation.update(
+			requireHomepageValue(request.kicker(), "Homepage kicker"),
+			requireHomepageValue(request.title(), "Homepage title"),
+			requireHomepageValue(request.subtitle(), "Homepage subtitle"),
+			requireHomepageValue(request.searchLabel(), "Homepage search label"),
+			requireHomepageValue(request.helpLabel(), "Homepage help label")
+		);
+		homepageContentTranslationRepository.save(translation);
+
+		for (int index = 0; index < request.cards().size(); index++) {
+			var cardRequest = request.cards().get(index);
+			Section section = cardSections.get(index);
+			HomepageCard homepageCard = homepageCardRepository
+				.findByHomepageContent_IdAndSection_Id(homepageContent.getId(), section.getId())
+				.orElse(null);
+			if (homepageCard == null) {
+				homepageCard = new HomepageCard(homepageContent, section, cardRequest.sortOrder());
+			}
+			homepageCard.update(section, cardRequest.sortOrder());
+			homepageCard = homepageCardRepository.save(homepageCard);
+
+			HomepageCardTranslation cardTranslation = homepageCardTranslationRepository
+				.findByHomepageCard_IdAndLocale(homepageCard.getId(), request.locale())
+				.orElse(null);
+			if (cardTranslation == null) {
+				cardTranslation = new HomepageCardTranslation(homepageCard, request.locale(), cardRequest.title(), cardRequest.description());
+			}
+			cardTranslation.update(
+				requireHomepageValue(cardRequest.title(), "Homepage card title"),
+				requireHomepageValue(cardRequest.description(), "Homepage card description")
+			);
+			homepageCardTranslationRepository.save(cardTranslation);
+		}
+
+		auditLogService.log("CONTENT_HOMEPAGE_UPDATED", actor, request.locale().name(), "Homepage content updated");
+		return new ApiResponse<>("Homepage updated", getAdminHomepage(request.locale()));
+	}
+
+	@Transactional
 	public ApiResponse<String> deleteTopic(Long topicId, String actor) {
 		Topic topic = topicRepository.findById(topicId)
 			.orElseThrow(() -> new ResourceNotFoundException("Topic not found: " + topicId));
@@ -424,6 +615,7 @@ public class ContentStructureService {
 		topicBlockTranslationRepository.deleteByTopicBlock_Topic_Id(topicId);
 		topicBlockRepository.deleteByTopic_Id(topicId);
 		topicTranslationRepository.deleteByTopic_Id(topicId);
+		topicWorkflowHistoryRepository.deleteByTopic_Id(topicId);
 		topicRepository.delete(topic);
 		auditLogService.log("CONTENT_TOPIC_DELETED", actor, String.valueOf(topicId), "Topic deleted");
 		return new ApiResponse<>("Topic deleted", topicId.toString());
@@ -504,6 +696,37 @@ public class ContentStructureService {
 		}
 	}
 
+	private void requireEditableTopic(Topic topic) {
+		if (topic.getStatus() != ContentStatus.DRAFT) {
+			throw new IllegalArgumentException("Only draft topics can be edited. Use REQUEST_CHANGES to return content to draft before editing.");
+		}
+	}
+
+	private void requireEditableTopicBlock(TopicBlock topicBlock) {
+		if (topicBlock.getStatus() != ContentStatus.DRAFT || topicBlock.getTopic().getStatus() != ContentStatus.DRAFT) {
+			throw new IllegalArgumentException("Only blocks on draft topics can be edited. Use REQUEST_CHANGES to return content to draft before editing.");
+		}
+	}
+
+	private List<TopicWorkflowHistoryResponse> getWorkflowHistory(Long topicId) {
+		return topicWorkflowHistoryRepository.findByTopic_IdOrderByCreatedAtDesc(topicId).stream()
+			.map(history -> new TopicWorkflowHistoryResponse(
+				history.getId(),
+				history.getTopic().getId(),
+				history.getAction().name(),
+				history.getFromStatus().name(),
+				history.getToStatus().name(),
+				history.getComment(),
+				history.getPerformedBy(),
+				history.getCreatedAt()
+			))
+			.toList();
+	}
+
+	private TopicPublishReadinessResponse getPublishReadiness(Topic topic) {
+		return topicPublishReadinessService.getPublishReadiness(topic);
+	}
+
 	private SectionSummaryResponse toSectionSummary(SectionTranslation translation) {
 		return new SectionSummaryResponse(
 			translation.getSection().getId(),
@@ -516,10 +739,113 @@ public class ContentStructureService {
 		);
 	}
 
+	private TopicSummaryResponse toTopicSummary(TopicTranslation translation) {
+		return new TopicSummaryResponse(
+			translation.getTopic().getId(),
+			translation.getTopic().getSection().getId(),
+			translation.getTitle(),
+			translation.getSlug(),
+			translation.getSummary(),
+			translation.getTopic().getTopicType().name(),
+			translation.getTopic().getStatus().name(),
+			translation.getTopic().getSortOrder(),
+			translation.getTopic().getScheduledPublishAt()
+		);
+	}
+
+	private Section resolveHomepageCardSection(
+		Long sectionId,
+		String sectionSlug,
+		String cardTitle,
+		String cardDescription,
+		Integer sortOrder,
+		LanguageCode locale
+	) {
+		if (sectionId != null) {
+			return sectionRepository.findById(sectionId)
+				.orElseThrow(() -> new ResourceNotFoundException("Section not found: " + sectionId));
+		}
+		if (sectionSlug != null && !sectionSlug.isBlank()) {
+			var sectionBySlug = sectionTranslationRepository.findBySlugAndLocale(sectionSlug.trim(), locale)
+				.or(() -> sectionTranslationRepository.findBySlugAndLocale(sectionSlug.trim(), LanguageCode.EN));
+			if (sectionBySlug.isPresent()) {
+				return sectionBySlug.get().getSection();
+			}
+		}
+		if (cardTitle != null && !cardTitle.isBlank()) {
+			return sectionTranslationRepository.findFirstByNameIgnoreCaseAndLocale(cardTitle.trim(), locale)
+				.orElseGet(() -> sectionTranslationRepository.findFirstByNameIgnoreCaseAndLocale(cardTitle.trim(), LanguageCode.EN)
+					.orElseGet(() -> createHomepageCardSection(sectionSlug, cardTitle, cardDescription, sortOrder, locale)))
+				.getSection();
+		}
+
+		throw new IllegalArgumentException("Homepage card requires sectionId, sectionSlug, or a title matching an existing section.");
+	}
+
+	private SectionTranslation createHomepageCardSection(
+		String sectionSlug,
+		String cardTitle,
+		String cardDescription,
+		Integer sortOrder,
+		LanguageCode locale
+	) {
+		String resolvedTitle = requireHomepageValue(cardTitle, "Homepage card title");
+		String resolvedSlug = sectionSlug == null || sectionSlug.isBlank()
+			? slugify(resolvedTitle)
+			: sectionSlug.trim();
+		Instant now = Instant.now();
+		Section section = sectionRepository.save(new Section(
+			null,
+			SectionType.MAIN,
+			sortOrder == null ? 1 : sortOrder,
+			ContentStatus.PUBLISHED,
+			null,
+			true,
+			now,
+			now
+		));
+		return sectionTranslationRepository.save(new SectionTranslation(
+			section,
+			locale,
+			resolvedTitle,
+			resolvedSlug,
+			cardDescription == null || cardDescription.isBlank() ? resolvedTitle : cardDescription.trim()
+		));
+	}
+
+	private String slugify(String value) {
+		return value.trim()
+			.toLowerCase()
+			.replaceAll("[^a-z0-9]+", "-")
+			.replaceAll("(^-|-$)", "");
+	}
+
+	private List<TopicSummaryResponse> getRelatedGuides(Topic topic, LanguageCode locale) {
+		return topicTranslationRepository
+			.findByTopic_Section_IdAndLocaleAndTopic_StatusAndTopic_TopicTypeAndTopic_IdNotOrderByTopic_SortOrderAsc(
+				topic.getSection().getId(),
+				locale,
+				ContentStatus.PUBLISHED,
+				TopicType.GUIDE,
+				topic.getId()
+			)
+			.stream()
+			.limit(4)
+			.map(this::toTopicSummary)
+			.toList();
+	}
+
 	private String getSectionSlug(Long sectionId, LanguageCode locale) {
 		return sectionTranslationRepository.findBySection_IdAndLocale(sectionId, locale)
 			.orElseGet(() -> sectionTranslationRepository.findBySection_IdAndLocale(sectionId, LanguageCode.EN)
 				.orElseThrow(() -> new ResourceNotFoundException("Section translation not found for section: " + sectionId)))
 			.getSlug();
+	}
+
+	private String requireHomepageValue(String value, String fieldName) {
+		if (value == null || value.isBlank()) {
+			throw new IllegalArgumentException(fieldName + " is required.");
+		}
+		return value.trim();
 	}
 }

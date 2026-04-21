@@ -9,4 +9,5 @@ import com.rra.taxhandbook.content.homepage.entity.HomepageContent;
 
 public interface HomepageContentRepository extends JpaRepository<HomepageContent, Long> {
 	Optional<HomepageContent> findFirstByStatusOrderByUpdatedAtDesc(ContentStatus status);
+	Optional<HomepageContent> findFirstByOrderByUpdatedAtDesc();
 }

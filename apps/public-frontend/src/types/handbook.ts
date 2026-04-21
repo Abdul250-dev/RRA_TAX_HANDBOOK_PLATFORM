@@ -39,7 +39,21 @@ export interface HandbookTopicDetail {
   topicType: string;
   status: string;
   scheduledPublishAt: string | null;
+  lastUpdated: string | null;
   blocks: HandbookTopicBlock[];
+  relatedFaqs: Array<{
+    id: number;
+    question: string;
+    answer: string;
+    language: string;
+  }>;
+  relatedDocuments: Array<{
+    id: number;
+    title: string;
+    fileName: string;
+    fileUrl: string;
+  }>;
+  relatedGuides: HandbookTopicSummary[];
 }
 
 export interface HomepageCard {

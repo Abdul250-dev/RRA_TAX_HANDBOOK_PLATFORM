@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { getHandbookSections, getHomepageContent } from "../../lib/api/handbook";
 import { routes } from "../../lib/constants/routes";
+import { getHomepageBranchHref } from "../../lib/content/homepageBranches";
 import type { HandbookSectionSummary, HomepageContent } from "../../types/handbook";
 
 function buildSectionTree(sections: HandbookSectionSummary[]) {
@@ -42,7 +43,7 @@ export default async function HomePage({
       key: `${card.sectionId}-${card.slug}`,
       title: card.title,
       description: card.description,
-      href: routes.section(locale, card.slug),
+      href: getHomepageBranchHref(locale, card.title, card.slug),
     }));
   } catch {
     try {

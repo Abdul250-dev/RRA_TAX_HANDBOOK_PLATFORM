@@ -4,9 +4,14 @@ import java.time.Instant;
 
 public record TopicWorkflowActionRequest(
 	String action,
-	Instant scheduledAt
+	Instant scheduledAt,
+	String comment
 ) {
 	public TopicWorkflowActionRequest(String action) {
-		this(action, null);
+		this(action, null, null);
+	}
+
+	public TopicWorkflowActionRequest(String action, Instant scheduledAt) {
+		this(action, scheduledAt, null);
 	}
 }

@@ -9,6 +9,7 @@ public record TopicWorkflowResponse(
 	String status,
 	String action,
 	String performedBy,
+	String comment,
 	Instant scheduledPublishAt
 ) {
 }

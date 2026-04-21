@@ -8,4 +8,5 @@ import com.rra.taxhandbook.content.homepage.entity.HomepageCard;
 
 public interface HomepageCardRepository extends JpaRepository<HomepageCard, Long> {
 	Optional<HomepageCard> findByHomepageContent_IdAndSection_Id(Long homepageContentId, Long sectionId);
+	java.util.List<HomepageCard> findByHomepageContent_IdOrderBySortOrderAsc(Long homepageContentId);
 }

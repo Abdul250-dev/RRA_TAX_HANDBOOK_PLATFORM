@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.rra.taxhandbook.common.enums.ContentStatus;
 import com.rra.taxhandbook.common.enums.LanguageCode;
+import com.rra.taxhandbook.content.topic.entity.TopicType;
 import com.rra.taxhandbook.content.topic.entity.TopicTranslation;
 
 public interface TopicTranslationRepository extends JpaRepository<TopicTranslation, Long> {
@@ -35,5 +36,26 @@ public interface TopicTranslationRepository extends JpaRepository<TopicTranslati
 		Long sectionId,
 		LanguageCode locale,
 		ContentStatus status
+	);
+
+	List<TopicTranslation> findByTopic_Section_IdAndLocaleAndTopic_StatusAndTopic_TopicTypeAndTopic_IdNotOrderByTopic_SortOrderAsc(
+		Long sectionId,
+		LanguageCode locale,
+		ContentStatus status,
+		TopicType topicType,
+		Long topicId
+	);
+
+	List<TopicTranslation> findByLocaleAndTopic_StatusAndTopic_TopicTypeOrderByTopic_SortOrderAsc(
+		LanguageCode locale,
+		ContentStatus status,
+		TopicType topicType
+	);
+
+	Optional<TopicTranslation> findBySlugAndLocaleAndTopic_StatusAndTopic_TopicType(
+		String slug,
+		LanguageCode locale,
+		ContentStatus status,
+		TopicType topicType
 	);
 }

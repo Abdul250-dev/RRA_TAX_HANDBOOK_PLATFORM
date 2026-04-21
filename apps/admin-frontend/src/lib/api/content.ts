@@ -56,7 +56,11 @@ export interface TopicSummary {
 
 export interface TopicDetail extends TopicSummary {
   introText: string;
+  lastUpdated: string | null;
   blocks: TopicBlock[];
+  relatedFaqs: unknown[];
+  relatedDocuments: unknown[];
+  relatedGuides: TopicSummary[];
 }
 
 export interface TopicBlock {
@@ -66,6 +70,25 @@ export interface TopicBlock {
   blockType: "RICH_TEXT" | "STEP_LIST" | "INFO_CARD" | "RELATED_LINKS";
   anchorKey: string;
   sortOrder: number;
+}
+
+export interface AdminHomepageCard {
+  sectionId: number;
+  title: string;
+  slug: string;
+  description: string;
+  sortOrder: number;
+}
+
+export interface AdminHomepageContent {
+  kicker: string;
+  title: string;
+  subtitle: string;
+  searchLabel: string;
+  helpLabel: string;
+  status: string;
+  updatedAt: string | null;
+  cards: AdminHomepageCard[];
 }
 
 export interface CreateSectionPayload {
@@ -98,8 +121,28 @@ export interface CreateTopicBlockPayload {
   body: string;
 }
 
+export interface UpdateHomepagePayload {
+  locale: LocaleCode;
+  kicker: string;
+  title: string;
+  subtitle: string;
+  searchLabel: string;
+  helpLabel: string;
+  cards: Array<{
+    sectionId: number;
+    sectionSlug?: string;
+    sortOrder: number;
+    title: string;
+    description: string;
+  }>;
+}
+
 export async function getAdminContentSummary(token?: string) {
   return apiClient<ContentSummary>("/api/admin/content/summary", { token });
+}
+
+export async function getAdminHomepage(token?: string, locale: LocaleCode = "EN") {
+  return apiClient<AdminHomepageContent>(`/api/admin/content/homepage?locale=${locale}`, { token });
 }
 
 export async function getAdminSections(token?: string, locale: LocaleCode = "EN") {
@@ -116,8 +159,16 @@ export async function getAdminReviewQueue(token?: string, locale: LocaleCode = "
   return apiClient<TopicSummary[]>(`/api/admin/content/topics/review-queue?locale=${locale}`, { token });
 }
 
+export async function getAdminReviewQueueDetails(token?: string, locale: LocaleCode = "EN") {
+  return apiClient<TopicDetail[]>(`/api/admin/content/topics/review-queue/details?locale=${locale}`, { token });
+}
+
 export async function getAdminPublishQueue(token?: string, locale: LocaleCode = "EN") {
   return apiClient<TopicSummary[]>(`/api/admin/content/topics/publish-queue?locale=${locale}`, { token });
+}
+
+export async function getAdminPublishQueueDetails(token?: string, locale: LocaleCode = "EN") {
+  return apiClient<TopicDetail[]>(`/api/admin/content/topics/publish-queue/details?locale=${locale}`, { token });
 }
 
 export async function createAdminSection(token: string, payload: CreateSectionPayload) {
@@ -160,6 +211,14 @@ export async function transitionAdminTopic(
 export async function processScheduledPublishes(token: string) {
   return apiClient<ApiResponse<{ processedCount: number }>>("/api/admin/content/topics/workflow/process-scheduled", {
     method: "POST",
+    token,
+  });
+}
+
+export async function updateAdminHomepage(token: string, payload: UpdateHomepagePayload) {
+  return apiClient<ApiResponse<AdminHomepageContent>>("/api/admin/content/homepage", {
+    data: payload,
+    method: "PUT",
     token,
   });
 }
