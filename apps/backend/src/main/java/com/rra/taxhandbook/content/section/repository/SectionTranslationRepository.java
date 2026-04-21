@@ -12,6 +12,11 @@ import com.rra.taxhandbook.content.section.entity.SectionTranslation;
 public interface SectionTranslationRepository extends JpaRepository<SectionTranslation, Long> {
 	List<SectionTranslation> findByLocaleOrderBySection_SortOrderAsc(LanguageCode locale);
 	List<SectionTranslation> findByLocaleAndSection_StatusOrderBySection_SortOrderAsc(LanguageCode locale, com.rra.taxhandbook.common.enums.ContentStatus status);
+	List<SectionTranslation> findByLocaleAndSection_StatusAndNameContainingIgnoreCaseOrderBySection_SortOrderAsc(
+		LanguageCode locale,
+		com.rra.taxhandbook.common.enums.ContentStatus status,
+		String name
+	);
 	List<SectionTranslation> findBySection_Parent_IdAndLocaleAndSection_StatusOrderBySection_SortOrderAsc(
 		Long parentId,
 		LanguageCode locale,

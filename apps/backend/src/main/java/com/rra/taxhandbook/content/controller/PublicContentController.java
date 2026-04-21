@@ -10,10 +10,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.rra.taxhandbook.common.enums.LanguageCode;
 import com.rra.taxhandbook.content.dto.HomepageResponse;
+import com.rra.taxhandbook.content.dto.PublicSearchResponse;
 import com.rra.taxhandbook.content.dto.PublicSectionDetailResponse;
 import com.rra.taxhandbook.content.dto.SectionSummaryResponse;
 import com.rra.taxhandbook.content.dto.TopicDetailResponse;
 import com.rra.taxhandbook.content.dto.TopicSummaryResponse;
+import com.rra.taxhandbook.content.search.PublicContentSearchService;
 import com.rra.taxhandbook.content.service.ContentStructureService;
 
 @RestController
@@ -21,14 +23,21 @@ import com.rra.taxhandbook.content.service.ContentStructureService;
 public class PublicContentController {
 
 	private final ContentStructureService contentStructureService;
+	private final PublicContentSearchService publicContentSearchService;
 
-	public PublicContentController(ContentStructureService contentStructureService) {
+	public PublicContentController(ContentStructureService contentStructureService, PublicContentSearchService publicContentSearchService) {
 		this.contentStructureService = contentStructureService;
+		this.publicContentSearchService = publicContentSearchService;
 	}
 
 	@GetMapping("/homepage")
 	public HomepageResponse getHomepage(@RequestParam(defaultValue = "EN") LanguageCode locale) {
 		return contentStructureService.getHomepage(locale);
+	}
+
+	@GetMapping("/search")
+	public PublicSearchResponse search(@RequestParam String q, @RequestParam(defaultValue = "EN") LanguageCode locale) {
+		return publicContentSearchService.search(q, locale);
 	}
 
 	@GetMapping("/sections")

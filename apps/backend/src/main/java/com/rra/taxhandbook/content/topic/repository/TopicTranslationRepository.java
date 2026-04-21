@@ -52,6 +52,27 @@ public interface TopicTranslationRepository extends JpaRepository<TopicTranslati
 		TopicType topicType
 	);
 
+	@Query("""
+		select tt
+		from TopicTranslation tt
+		left join TopicBlock tb on tb.topic = tt.topic and tb.status = :status
+		left join TopicBlockTranslation tbt on tbt.topicBlock = tb and tbt.locale = :locale
+		where tt.locale = :locale
+		and tt.topic.status = :status
+		and (
+			lower(tt.title) like lower(concat('%', :query, '%'))
+			or lower(tt.summary) like lower(concat('%', :query, '%'))
+			or lower(tt.introText) like lower(concat('%', :query, '%'))
+			or lower(tbt.title) like lower(concat('%', :query, '%'))
+			or lower(tbt.body) like lower(concat('%', :query, '%'))
+		)
+	""")
+	List<TopicTranslation> searchPublishedByLocale(
+		@Param("locale") LanguageCode locale,
+		@Param("status") ContentStatus status,
+		@Param("query") String query
+	);
+
 	Optional<TopicTranslation> findBySlugAndLocaleAndTopic_StatusAndTopic_TopicType(
 		String slug,
 		LanguageCode locale,

@@ -32,6 +32,11 @@ import com.rra.taxhandbook.content.topicblock.entity.TopicBlockType;
 import com.rra.taxhandbook.content.topicblock.repository.TopicBlockRepository;
 import com.rra.taxhandbook.content.topicblock.repository.TopicBlockTranslationRepository;
 import com.rra.taxhandbook.content.dto.TopicWorkflowActionRequest;
+import com.rra.taxhandbook.content.homepage.repository.HomepageCardRepository;
+import com.rra.taxhandbook.content.homepage.repository.HomepageCardTranslationRepository;
+import com.rra.taxhandbook.content.homepage.repository.HomepageContentRepository;
+import com.rra.taxhandbook.content.homepage.repository.HomepageContentTranslationRepository;
+import com.rra.taxhandbook.content.workflow.TopicWorkflowHistoryRepository;
 import com.rra.taxhandbook.content.workflow.TopicWorkflowService;
 
 @SpringBootTest
@@ -66,8 +71,28 @@ class PublicContentContractIntegrationTests {
 	@Autowired
 	private SectionRepository sectionRepository;
 
+	@Autowired
+	private HomepageCardTranslationRepository homepageCardTranslationRepository;
+
+	@Autowired
+	private HomepageCardRepository homepageCardRepository;
+
+	@Autowired
+	private HomepageContentTranslationRepository homepageContentTranslationRepository;
+
+	@Autowired
+	private HomepageContentRepository homepageContentRepository;
+
+	@Autowired
+	private TopicWorkflowHistoryRepository topicWorkflowHistoryRepository;
+
 	@BeforeEach
 	void setUp() {
+		homepageCardTranslationRepository.deleteAll();
+		homepageCardRepository.deleteAll();
+		homepageContentTranslationRepository.deleteAll();
+		homepageContentRepository.deleteAll();
+		topicWorkflowHistoryRepository.deleteAll();
 		topicBlockTranslationRepository.deleteAll();
 		topicBlockRepository.deleteAll();
 		topicTranslationRepository.deleteAll();
@@ -126,7 +151,7 @@ class PublicContentContractIntegrationTests {
 		seedPublishedTopic("public-contract-topic");
 
 		var parentSection = sectionRepository.findAll().get(0);
-		contentStructureService.createSection(
+		var childSection = contentStructureService.createSection(
 			new AdminCreateSectionRequest(
 				parentSection.getId(),
 				SectionType.GROUP,
@@ -138,6 +163,32 @@ class PublicContentContractIntegrationTests {
 			),
 			"admin@rra.test"
 		);
+		var childTopic = contentStructureService.createTopic(
+			new AdminCreateTopicRequest(
+				childSection.data().id(),
+				TopicType.TAX_TOPIC,
+				1,
+				LanguageCode.EN,
+				"Public Child Topic",
+				"public-child-topic",
+				"Child topic summary",
+				"Child topic intro"
+			),
+			"admin@rra.test"
+		);
+		contentStructureService.createTopicBlock(
+			childTopic.data().id(),
+			new AdminCreateTopicBlockRequest(
+				TopicBlockType.RICH_TEXT,
+				1,
+				"overview",
+				LanguageCode.EN,
+				"Overview",
+				"Published child body"
+			),
+			"admin@rra.test"
+		);
+		publishTopic(childTopic.data().id());
 
 		mockMvc.perform(get("/api/public/sections/{slug}", "public-contract-section").queryParam("locale", "EN"))
 			.andExpect(status().isOk())
@@ -193,7 +244,73 @@ class PublicContentContractIntegrationTests {
 			.andExpect(status().isBadRequest());
 	}
 
-	private void seedPublishedTopic(String slug) {
+	@Test
+	void publicSearchEndpointReturnsGroupedPublishedContentOnly() throws Exception {
+		var sectionResponse = seedPublishedTopic("public-contract-topic");
+		var guideResponse = contentStructureService.createTopic(
+			new AdminCreateTopicRequest(
+				sectionResponse.data().id(),
+				TopicType.GUIDE,
+				2,
+				LanguageCode.EN,
+				"Contract Filing Guide",
+				"contract-filing-guide",
+				"Practical contract filing guide",
+				"Guide intro"
+			),
+			"admin@rra.test"
+		);
+		contentStructureService.createTopicBlock(
+			guideResponse.data().id(),
+			new AdminCreateTopicBlockRequest(
+				TopicBlockType.RICH_TEXT,
+				1,
+				"overview",
+				LanguageCode.EN,
+				"Overview",
+				"Guide body"
+			),
+			"admin@rra.test"
+		);
+		publishTopic(guideResponse.data().id());
+		createDraftOnlySection();
+
+		mockMvc.perform(get("/api/public/search")
+				.queryParam("q", "contract")
+				.queryParam("locale", "EN"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.query").value("contract"))
+			.andExpect(jsonPath("$.locale").value("EN"))
+			.andExpect(jsonPath("$.sections.length()").value(1))
+			.andExpect(jsonPath("$.sections[0].slug").value("public-contract-section"))
+			.andExpect(jsonPath("$.topics.length()").value(1))
+			.andExpect(jsonPath("$.topics[0].slug").value("public-contract-topic"))
+			.andExpect(jsonPath("$.guides.length()").value(1))
+			.andExpect(jsonPath("$.guides[0].slug").value("contract-filing-guide"))
+			.andExpect(jsonPath("$.faqs.length()").value(0))
+			.andExpect(jsonPath("$.documents.length()").value(0));
+	}
+
+	@Test
+	void publicSearchEndpointSearchesReferenceFaqsAndDocuments() throws Exception {
+		mockMvc.perform(get("/api/public/search")
+				.queryParam("q", "tax")
+				.queryParam("locale", "EN"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.faqs.length()").value(1))
+			.andExpect(jsonPath("$.documents.length()").value(1));
+	}
+
+	@Test
+	void publicSearchEndpointRejectsShortQuery() throws Exception {
+		mockMvc.perform(get("/api/public/search")
+				.queryParam("q", "t")
+				.queryParam("locale", "EN"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.message").value("Search query must contain at least 2 characters."));
+	}
+
+	private com.rra.taxhandbook.common.dto.ApiResponse<com.rra.taxhandbook.content.dto.SectionSummaryResponse> seedPublishedTopic(String slug) {
 		var sectionResponse = contentStructureService.createSection(
 			new AdminCreateSectionRequest(
 				null,
@@ -246,6 +363,25 @@ class PublicContentContractIntegrationTests {
 		);
 		topicWorkflowService.transitionTopic(
 			topicResponse.data().id(),
+			new TopicWorkflowActionRequest("PUBLISH"),
+			TestAuth.authentication("publisher@rra.test", "PUBLISHER")
+		);
+		return sectionResponse;
+	}
+
+	private void publishTopic(Long topicId) {
+		topicWorkflowService.transitionTopic(
+			topicId,
+			new TopicWorkflowActionRequest("SUBMIT_FOR_REVIEW"),
+			TestAuth.authentication("editor@rra.test", "EDITOR")
+		);
+		topicWorkflowService.transitionTopic(
+			topicId,
+			new TopicWorkflowActionRequest("APPROVE"),
+			TestAuth.authentication("reviewer@rra.test", "REVIEWER")
+		);
+		topicWorkflowService.transitionTopic(
+			topicId,
 			new TopicWorkflowActionRequest("PUBLISH"),
 			TestAuth.authentication("publisher@rra.test", "PUBLISHER")
 		);

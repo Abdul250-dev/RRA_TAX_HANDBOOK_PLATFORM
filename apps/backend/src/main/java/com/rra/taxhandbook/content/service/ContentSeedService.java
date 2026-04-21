@@ -124,6 +124,8 @@ public class ContentSeedService {
 			seedSectionTranslation(guides, LanguageCode.FR, "Guides utilisateurs et exemples", "guides", "Trouvez des guides utilisateurs et des exemples pour mieux comprendre les differents types d'impots.");
 			seedSectionTranslation(guides, LanguageCode.KIN, "Ubuyobozi n'ingero", "ubuyobozi-n-ingero", "Shakamo ubuyobozi n'ingero bigufasha gusobanukirwa ubwoko butandukanye bw'imisoro.");
 
+			seedContactContent(now);
+
 			HomepageContent homepageContent = homepageContentRepository.save(new HomepageContent(ContentStatus.PUBLISHED, now));
 			seedHomepageTranslation(homepageContent, LanguageCode.EN, "Rwanda Revenue Authority", "Tax Handbook", "Explore the official public handbook for tax information, services, procedures, and practical guidance across Rwanda's tax system.", "Search handbook", "Get help");
 			seedHomepageTranslation(homepageContent, LanguageCode.FR, "Office Rwandais des Recettes", "Guide fiscal", "Explorez le guide public officiel pour les informations fiscales, les services, les procedures et les orientations pratiques du systeme fiscal rwandais.", "Rechercher", "Obtenir de l'aide");
@@ -148,6 +150,8 @@ public class ContentSeedService {
 	}
 
 	private void seedHomepageForExistingContentIfMissing() {
+		ensureContactContentExists();
+
 		if (homepageContentRepository.count() > 0) {
 			return;
 		}
@@ -182,6 +186,40 @@ public class ContentSeedService {
 		seedHomepageCard(homepageContent, guides, 4, LanguageCode.EN, "User guides and examples", "Here you will find user guides on filing different taxes and various examples to help your understanding on various tax types.");
 		seedHomepageCard(homepageContent, guides, 4, LanguageCode.FR, "Guides utilisateurs et exemples", "Vous trouverez ici des guides de declaration et divers exemples pour mieux comprendre les differents types d'impots.");
 		seedHomepageCard(homepageContent, guides, 4, LanguageCode.KIN, "Ubuyobozi n'ingero", "Aha uzasangamo ubuyobozi bwo gutanga imenyekanisha n'ingero zitandukanye zigufasha gusobanukirwa neza ubwoko bw'imisoro.");
+	}
+
+	private void ensureContactContentExists() {
+		if (findSectionByEnglishSlug("contact") != null) {
+			return;
+		}
+		seedContactContent(Instant.now());
+	}
+
+	private void seedContactContent(Instant now) {
+		Section contact = sectionRepository.save(new Section(null, SectionType.MAIN, 5, ContentStatus.PUBLISHED, "phone", true, now, now));
+		seedSectionTranslation(contact, LanguageCode.EN, "Contact", "contact", "Find official RRA contact details, taxpayer support channels, and tax centre information.");
+		seedSectionTranslation(contact, LanguageCode.FR, "Contact", "contact", "Trouvez les coordonnees officielles de la RRA, les canaux d'assistance aux contribuables et les centres fiscaux.");
+		seedSectionTranslation(contact, LanguageCode.KIN, "Twandikire", "twandikire", "Menya amakuru yo kuvugana na RRA, inzira z'ubufasha ku basora n'ibiro by'imisoro.");
+
+		Topic contactDetails = topicRepository.save(new Topic(contact, TopicType.STATIC_TOPIC, ContentStatus.PUBLISHED, 1, true, true, now, null, now, now));
+		seedTopicTranslation(contactDetails, LanguageCode.EN, "RRA contact details", "rra-contact-details", "Official channels for reaching Rwanda Revenue Authority.", "Use the official RRA service channels for taxpayer assistance, service questions, and follow-up on tax handbook guidance.");
+		seedTopicTranslation(contactDetails, LanguageCode.FR, "Coordonnees de la RRA", "coordonnees-rra", "Canaux officiels pour contacter l'Office Rwandais des Recettes.", "Utilisez les canaux officiels de la RRA pour l'assistance aux contribuables, les questions de service et le suivi des orientations du guide fiscal.");
+		seedTopicTranslation(contactDetails, LanguageCode.KIN, "Uko wavugana na RRA", "uko-wavugana-na-rra", "Inzira zemewe zo kuvugana n'Ikigo cy'Igihugu cy'Imisoro n'Amahoro.", "Koresha inzira zemewe za RRA mu gusaba ubufasha, kubaza ibibazo bya serivisi no gukurikirana ubuyobozi bwo mu gitabo cy'imisoro.");
+
+		TopicBlock contactChannels = topicBlockRepository.save(new TopicBlock(contactDetails, TopicBlockType.INFO_CARD, 1, ContentStatus.PUBLISHED, "contact-channels", true, now, now));
+		seedTopicBlockTranslation(contactChannels, LanguageCode.EN, "Taxpayer support channels", "RRA support content is managed from the CMS so public contact details can be updated without a code release. Add phone numbers, email addresses, office hours, and service links here when confirmed by the business owner.");
+		seedTopicBlockTranslation(contactChannels, LanguageCode.FR, "Canaux d'assistance aux contribuables", "Le contenu d'assistance RRA est gere depuis le CMS afin que les coordonnees publiques puissent etre mises a jour sans livraison de code. Ajoutez ici les numeros, e-mails, horaires et liens de service apres confirmation.");
+		seedTopicBlockTranslation(contactChannels, LanguageCode.KIN, "Inzira z'ubufasha ku basora", "Amakuru y'ubufasha bwa RRA acungwa muri CMS kugira ngo avugururwe bitabaye ngombwa guhindura code. Ongeramo telefoni, email, amasaha y'akazi n'amahuza ya serivisi byemejwe.");
+
+		Topic taxCentres = topicRepository.save(new Topic(contact, TopicType.STATIC_TOPIC, ContentStatus.PUBLISHED, 2, false, true, now, null, now, now));
+		seedTopicTranslation(taxCentres, LanguageCode.EN, "Tax centres", "tax-centres", "Information about RRA tax centres and taxpayer service locations.", "Use this page for CMS-managed tax centre details, service coverage, addresses, and taxpayer visit guidance.");
+		seedTopicTranslation(taxCentres, LanguageCode.FR, "Centres fiscaux", "centres-fiscaux", "Informations sur les centres fiscaux de la RRA et les lieux de service aux contribuables.", "Utilisez cette page pour gerer dans le CMS les centres fiscaux, les zones de service, les adresses et les conseils de visite.");
+		seedTopicTranslation(taxCentres, LanguageCode.KIN, "Ibiro by'imisoro", "ibiro-by-imisoro", "Amakuru yerekeye ibiro by'imisoro bya RRA n'aho abasora bahererwa serivisi.", "Koresha uru rupapuro mu gucunga amakuru y'ibiro by'imisoro, aho bitanga serivisi, aderesi n'inama ku basora babigana.");
+
+		TopicBlock taxCentreGuidance = topicBlockRepository.save(new TopicBlock(taxCentres, TopicBlockType.RICH_TEXT, 1, ContentStatus.PUBLISHED, "tax-centre-guidance", false, now, now));
+		seedTopicBlockTranslation(taxCentreGuidance, LanguageCode.EN, "Before visiting a tax centre", "Confirm the service you need, prepare your taxpayer identification details, and check the official RRA channels for the latest office information before visiting.");
+		seedTopicBlockTranslation(taxCentreGuidance, LanguageCode.FR, "Avant de vous rendre dans un centre fiscal", "Confirmez le service dont vous avez besoin, preparez vos informations d'identification fiscale et consultez les canaux officiels de la RRA avant votre visite.");
+		seedTopicBlockTranslation(taxCentreGuidance, LanguageCode.KIN, "Mbere yo kujya ku biro by'imisoro", "Banza wemeze serivisi ukeneye, utegure amakuru akuranga nk'umusora kandi urebe amakuru agezweho ku nzira zemewe za RRA mbere yo kuhagera.");
 	}
 
 	private void seedSectionTranslation(Section section, LanguageCode locale, String name, String slug, String summary) {
