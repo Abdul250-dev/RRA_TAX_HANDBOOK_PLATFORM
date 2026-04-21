@@ -1,4 +1,7 @@
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8081";
+const isServer = typeof window === "undefined";
+const baseUrl = isServer
+  ? (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8081")
+  : "";
 
 interface ApiClientOptions {
   body?: BodyInit;
