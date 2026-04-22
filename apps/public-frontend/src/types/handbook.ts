@@ -78,3 +78,37 @@ export interface HandbookSectionDetail extends HandbookSectionSummary {
   children: HandbookSectionSummary[];
   topics: HandbookTopicSummary[];
 }
+
+export interface PublicSearchResult {
+  id: number;
+  title: string;
+  slug: string;
+  summary: string | null;
+  type: string;
+  sectionId: number | null;
+  url: string;
+}
+
+export interface PublicSearchFaqResult {
+  id: number;
+  question: string;
+  answer: string;
+  language: string;
+}
+
+export interface PublicSearchDocumentResult {
+  id: number;
+  title: string;
+  fileName: string;
+  fileUrl: string;
+}
+
+export interface PublicSearchResponse {
+  query: string;
+  locale: string;
+  sections: PublicSearchResult[];
+  topics: PublicSearchResult[];
+  guides: PublicSearchResult[];
+  faqs: PublicSearchFaqResult[];
+  documents: PublicSearchDocumentResult[];
+}
