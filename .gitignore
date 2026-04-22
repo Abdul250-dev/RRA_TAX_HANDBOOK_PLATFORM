@@ -11,15 +11,10 @@
 node_modules/
 
 # Environment files
-.env
-.env.local
 .env.*.local
-.env.development
-.env.production
 
 # IDEs
 /.idea/
-/.vscode/
 *.iml
 
 # OS
@@ -38,7 +33,6 @@ pnpm-debug.log*
 /node_modules/
 **/node_modules/
 /.idea/
-/.vscode/
-.env
 docs/
 **/docs/
+config.bat
